@@ -19,6 +19,12 @@ public:
 
   void Update(const MouseInfo &translated_mouse);
   void Draw(Renderer &renderer) const;
+  void DrawCompactFolder(Renderer &renderer,int width,int height) const;
+  void DrawMidiRow(Renderer &renderer,int width,int row,
+                   bool selected=false) const;
+  void SetHitSize(int width,int height) {
+      whole_tile.w=width; whole_tile.h=height;
+  }
 
   int GetX() const {
     return m_x;

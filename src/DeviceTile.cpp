@@ -116,27 +116,54 @@ void DeviceTile::Draw(Renderer &renderer) const {
   // Draw mode text
   TextWriter mode(44, 49, renderer, false, 14);
   if (m_device_list.size() == 0)
-    mode << "[No Devices Found]";
+    mode << "[No se encontraron dispositivos]";
 
   else {
 
     // A -1 for device_id means "disabled"
-    if (m_device_id >= 0)
-      mode << m_device_list[m_device_id].name;
+    if (m_device_id >= 0) {
+      // Keep the actual ALSA device name unchanged for MIDI routing;
+      // localize only the generic system-provided display label.
+      std::string device_name = m_device_list[m_device_id].name;
+      const std::string generic_port = "Synth input port";
+      if (device_name.compare(0, generic_port.size(), generic_port) == 0)
+        device_name.replace(0, generic_port.size(), "Puerto de sintetizador");
+      mode << device_name;
+    }
 
     else {
       switch (m_tile_type) {
       case DeviceTileOutput:
-        mode << "[Output Off: Display only with no audio]";
+        mode << "[Sin salida: solo visualización, sin sonido]";
         break;
 
       case DeviceTileInput:
-        mode << "[Input Off: Play along with no scoring]";
+        mode << "[Sin entrada: acompañamiento sin puntuación]";
         break;
       }
     }
   }
 
+  renderer.ResetOffset();
+}
+
+void DeviceTile::DrawReadOnly(Renderer &renderer) const {
+  // Conservar el dibujo y los valores del recuadro original.
+  renderer.SetOffset(m_x,m_y);
+  renderer.SetColor(Renderer::ToColor(0xE0,0xE0,0xE0));
+  renderer.DrawTga(m_frame_graphics,0,0);
+  TextWriter mode(44,49,renderer,false,14);
+  if(m_device_id>=0 && m_device_id<static_cast<int>(m_device_list.size())){
+    std::string name=m_device_list[m_device_id].name;
+    const std::string prefix="Synth input port";
+    if(name.compare(0,prefix.size(),prefix)==0)
+      name.replace(0,prefix.size(),"Puerto de sintetizador");
+    mode << name;
+  }else if(m_tile_type==DeviceTileInput){
+    mode << "[Sin entrada: acompañamiento sin puntuación]";
+  }else{
+    mode << "[Sin salida: solo visualización, sin sonido]";
+  }
   renderer.ResetOffset();
 }
 

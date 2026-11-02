@@ -39,6 +39,8 @@ public:
 
   void Update(const MouseInfo &translated_mouse);
   void Draw(Renderer &renderer) const;
+  // Original card appearance, without editable navigation arrows.
+  void DrawReadOnly(Renderer &renderer) const;
 
   int GetX() const {
     return m_x;

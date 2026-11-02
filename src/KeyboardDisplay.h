@@ -9,11 +9,16 @@
 #ifndef __KEYBOARDDISPLAY_H
 #define __KEYBOARDDISPLAY_H
 
+#include <array>
+#include <set>
 #include <map>
+#include <tuple>
 #include <vector>
 #include <string>
 
 #include "TrackTile.h"
+#include "PianoHands.h"
+#include "HandPractice.h"
 #include "TrackProperties.h"
 #include "Keyboard.h"
 
@@ -22,19 +27,51 @@
 
 typedef std::map<std::string, Track::TrackColor> KeyNames;
 
+// Parámetros gráficos efectivos de cada modo, conservados por separado.
+struct PlayerVisual {
+ int width=90,radius=3,opacity=100,glow=20,brightness=100;
+ int noteLength=100;
+ int guideSize=1,guideOpacity=85,keyOpacity=100;
+ int depth=65,angle=38,horizon=30,stageWidth=100,backgroundOpacity=100;
+ bool shadows=true;
+ int effectSpeed=100,effectCount=72,effectSpread=100,effectSize=100;
+ int effectPalette=0,effectBirth=1;
+ int scenePreset=-1,sceneLightIntensity=55,sceneLightColor=0;
+ int sceneCameraMotion=40,scenePianistMotion=55;
+ int sceneYaw=92,scenePitch=26,sceneZoom=405;
+ int sceneCameraFocus=0;
+};
+
 class KeyboardDisplay {
 public:
 
   const static microseconds_t NoteWindowLength = 330000;
 
   KeyboardDisplay(const Keyboard& keyboard, int pixelWidth, int pixelHeight);
+ ~KeyboardDisplay();
 
   void Draw(Renderer &renderer, const Tga *key_tex[3], const Tga *note_tex[4],
             int x, int y, const TranslatedNoteSet &notes, microseconds_t show_duration,
             microseconds_t current_time, const std::vector<Track::Properties> &track_properties,
-            const MidiEventMicrosecondList &bar_line_usecs);
+            const MidiEventMicrosecondList &bar_line_usecs,
+            bool perspective3d=false,int pianoPercent=16,
+            bool showGuides=true,bool showNames=true,
+            int style2D=0,int style3D=0,
+            const PlayerVisual& visual=PlayerVisual(),
+            const PianoHands::Guidance& handGuidance=PianoHands::Guidance(),
+            bool showFallingNotes=true);
 
   void SetKeyActive(const std::string &key_name, bool active, Track::TrackColor color);
+  // Per-note colours derived from the same classifier used by Sol/Fa score.
+  // Never modifies the source MIDI or any track selection.
+  void SetHandVisualization(const HandPractice::Classifier* classifier,
+                            bool enabled){
+    m_hands=enabled?classifier:nullptr;
+  }
+  void SetManualKeyboardNotes(const std::set<int>& pressed,int splitPoint){
+    m_manual_keyboard_notes=pressed;
+    m_manual_split_point=splitPoint;
+  }
 
   void ResetActiveKeys() {
     m_active_keys.clear();
@@ -105,15 +142,72 @@ private:
 
   // This works very much like DrawNote
   void DrawBlackKey(Renderer &renderer, const Tga *tex, const KeyTexDimensions &tex_dimensions,
-                    int x, int y, int w, int h, Track::TrackColor color) const;
+                    int x, int y, int w, int h, int sprite_index) const;
 
   int GetNoteNameFontSize(int key_width) const;
 
   const Keyboard& m_keyboard;
   KeyNames m_active_keys;
+  // Reflejo exacto de teclas sonando en el tiempo MIDI de este fotograma.
+  // Las notas manuales siguen gobernadas por SetKeyActive.
+  KeyNames m_frame_active_keys;
+  KeyNames m_frame_contact_keys;
+  // Recorrido gradual de teclas físicas; independiente del avance MIDI.
+  std::map<std::string,float> m_key_travel;
+  struct ImpactVisual {
+    int x,y,width;
+    float age;
+    SDL_Color color;
+    unsigned seed;
+    float fade=1.0f;
+  };
+  struct ReleasedImpact {
+    ImpactVisual visual;
+    microseconds_t noteOff=0;
+  };
+  // Retain the last frame's exact key center and timbre for a 420-ms tail.
+  mutable std::map<std::string,ImpactVisual> m_current_impacts;
+  mutable std::map<std::string,ImpactVisual> m_previous_impacts;
+  mutable std::map<std::string,ReleasedImpact> m_release_impacts;
+  std::map<std::string,Uint32> m_impact_started;
+  mutable std::vector<ImpactVisual> m_impact_visuals;
+  Uint32 m_last_travel_frame=0;
+  Uint32 m_effect_frame_ticks=0;
+  Uint64 m_effect_epoch=0;
+  double m_effect_time=0.0;
+  // Per-note animation starts at the FIRST visible drawing, including
+  // notes already in the roll when a song is opened or after seeking.
+  mutable std::map<std::tuple<int,int,microseconds_t,microseconds_t>,
+                   std::pair<double,double>> m_visible_births;
+  double m_last_birth_cleanup=0.0;
+  float m_keyboard_center=0;
+ std::array<Tga*,24> m_stage_textures{};
+ std::array<bool,24> m_stage_failed{};
+ double m_stage_pose_time=0.0,m_stage_previous_time=0.0;
+  float m_stage_pitch_pose=0.0f;
+  PianoHands::Animator m_live_hand_animator;
+  Uint64 m_live_hand_clock=0;
 
   int m_width;
   int m_height;
+  bool m_display_note_names=true;
+  int m_guide_style=0;
+  PlayerVisual m_visual;
+  bool m_shadow_pass=false;
+  bool m_render_3d=false;
+  bool m_cinematic_3d=false;
+  const HandPractice::Classifier* m_hands=nullptr;
+  std::set<int> m_manual_keyboard_notes;
+  int m_manual_split_point=60;
+  static Track::TrackColor HandColor(HandPractice::Hand hand){
+    return hand==HandPractice::Left?Track::TangoSkyBlue:
+                                     Track::TangoOrange;
+  }
+  Track::TrackColor NoteColor(const TranslatedNote& n,
+                 Track::TrackColor trackColor)const{
+    return m_hands?HandColor(m_hands->ForNote(n)):trackColor;
+  }
+
 };
 
 #endif // __KEYBOARDDISPLAY_H

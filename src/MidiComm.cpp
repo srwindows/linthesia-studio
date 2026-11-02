@@ -14,6 +14,9 @@
 #include "libmidi/MidiUtil.h"
 
 #include "MidiComm.h"
+#include "FluidEngine.h"
+#include "MidiActivity.h"
+#include "AdvancedSettings.h"
 #include "UserSettings.h"
 #include "CompatibleSystem.h"
 #include "StringUtil.h"
@@ -50,20 +53,20 @@ void midiInit() {
 
   // meanings of READ and WRITE are permissions of the port from the viewpoint of other ports
   // READ: port allows to send events to other ports
-  local_out = snd_seq_create_simple_port(alsa_seq, "Linthesia Output",
+  local_out = snd_seq_create_simple_port(alsa_seq, "Linthesia salida",
                                          SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ,
                                          SND_SEQ_PORT_TYPE_MIDI_GENERIC);
 
-  keybd_out = snd_seq_create_simple_port(alsa_seq, "Linthesia Keyboard",
+  keybd_out = snd_seq_create_simple_port(alsa_seq, "Linthesia teclado",
                                          SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ,
                                          SND_SEQ_PORT_TYPE_MIDI_GENERIC);
 
   // WRITE: port allows to receive events from other ports
-  local_in = snd_seq_create_simple_port(alsa_seq, "Linthesia Input",
+  local_in = snd_seq_create_simple_port(alsa_seq, "Linthesia entrada",
                                         SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_SUBS_WRITE,
                                         SND_SEQ_PORT_TYPE_MIDI_GENERIC);
 
-  anon_in = snd_seq_create_simple_port(alsa_seq, "Linthesia Annonce Listener",
+  anon_in = snd_seq_create_simple_port(alsa_seq, "Linthesia detector de dispositivos",
                                        SND_SEQ_PORT_CAP_WRITE | SND_SEQ_PORT_CAP_NO_EXPORT,
                                        SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
 
@@ -92,10 +95,10 @@ void midiInit() {
 }
 
 void midiStop() {
-
-  if (alsa_seq == NULL)
-    return;
+  FluidEngine::Shutdown();
+  if(alsa_seq==NULL)return;
   snd_seq_close(alsa_seq);
+  alsa_seq=nullptr;
 }
 
 void sendNote(const unsigned char note, bool on) {
@@ -176,7 +179,7 @@ MidiCommIn::MidiCommIn(unsigned int device_id) {
   int res = snd_seq_connect_from(alsa_seq, local_in, m_description.client, m_description.port);
   if (res < 0) {
     string msg = snd_strerror(res);
-    cout << "[WARNING] Input, cannot connect from '" << m_description.name << "': " << msg << endl;
+    cout << "[AVISO] Entrada: no se puede conectar desde '" << m_description.name << "': " << msg << endl;
   }
 
   // enable internal keyboard
@@ -242,11 +245,35 @@ MidiEvent MidiCommIn::Read() {
     simple.status = 0xC0 | (ev->data.note.channel & 0x0F); // Type and Channel
     simple.byte1 = ev->data.control.value;                 // Program number
     break;
+  case SND_SEQ_EVENT_CONTROLLER:
+    simple.status=0xB0 | (ev->data.control.channel & 0x0F);
+    simple.byte1=ev->data.control.param;
+    simple.byte2=ev->data.control.value;
+    break;
+  // Complete standard expressive MIDI events used by the Free Play
+  // recorder: sustain CC, pitch bend, channel and polyphonic aftertouch.
+  case SND_SEQ_EVENT_PITCHBEND: {
+    const int bend=std::max(0,std::min(16383,
+                         ev->data.control.value+8192));
+    simple.status=0xE0|(ev->data.control.channel & 0x0F);
+    simple.byte1=uint8_t(bend&127);
+    simple.byte2=uint8_t((bend>>7)&127);
+    break;
+  }
+  case SND_SEQ_EVENT_CHANPRESS:
+    simple.status=0xD0|(ev->data.control.channel & 0x0F);
+    simple.byte1=uint8_t(ev->data.control.value&127);
+    break;
+  case SND_SEQ_EVENT_KEYPRESS:
+    simple.status=0xA0|(ev->data.note.channel & 0x0F);
+    simple.byte1=ev->data.note.note;
+    simple.byte2=ev->data.note.velocity;
+    break;
 
   case SND_SEQ_EVENT_PORT_EXIT:
     // USB device is disconnected - the input client is closed
     {
-    cout << "MIDI device is lost" << endl;
+    cout << "Se ha desconectado el dispositivo MIDI" << endl;
     int lost_client = ev->data.addr.client;
     int lost_port   = ev->data.addr.port;
     // TODO add better error reporting
@@ -260,7 +287,7 @@ MidiEvent MidiCommIn::Read() {
     snd_seq_port_info_t* pinfo;
     snd_seq_port_info_alloca(&pinfo);
 
-    cout << "New MIDI device client=" << new_client << ", port=" << new_port << endl;
+    cout << "Nuevo dispositivo MIDI: cliente=" << new_client << ", port=" << new_port << endl;
     int err = snd_seq_get_any_port_info(alsa_seq, new_client, new_port, pinfo);
 
     if (err < 0)
@@ -268,10 +295,10 @@ MidiEvent MidiCommIn::Read() {
 
     int port = snd_seq_port_info_get_port(pinfo);
     int client = snd_seq_port_info_get_client(pinfo);
-    cout << "Port info client=" << client << ", port=" << port << endl;
+    cout << "Información del puerto: cliente=" << client << ", port=" << port << endl;
 
     std::string new_name = snd_seq_port_info_get_name(pinfo);
-    cout << "New MIDI device " << new_name << endl;
+    cout << "Nuevo dispositivo MIDI " << new_name << endl;
 
     m_should_reconnect = true;
     }
@@ -282,7 +309,9 @@ MidiEvent MidiCommIn::Read() {
     return MidiEvent::NullEvent();
   }
 
-  return MidiEvent::Build(simple);
+  MidiEvent result=MidiEvent::Build(simple);
+  MidiActivity::Observe(result);
+  return result;
 }
 
 bool MidiCommIn::KeepReading() const {
@@ -317,17 +346,28 @@ MidiCommOut::MidiCommOut(unsigned int device_id) {
 
   m_description = GetDeviceList()[device_id];
 
+  if(m_description.client<0){
+    std::string error;
+    if(!FluidEngine::IsRunning() &&
+       !FluidEngine::Start(AdvancedSettingsIO::Load(),error))
+      fprintf(stderr,"[Linthesia] %s\n",error.c_str());
+    return;
+  }
   // Connect local out to selected port
   int res = snd_seq_connect_to(alsa_seq, local_out, m_description.client, m_description.port);
   if (res < 0) {
     string msg = snd_strerror(res);
-    cout << "[WARNING] Output, cannot connect to '" << m_description.name
+    cout << "[AVISO] Salida: no se puede conectar a '" << m_description.name
          << "': " << msg << endl;
   }
 }
 
 MidiCommOut::~MidiCommOut() {
 
+  if(m_description.client<0){
+    FluidEngine::AllSoundsOff();
+    return;
+  }
   // Disconnect local out to selected port
   snd_seq_disconnect_to(alsa_seq, local_out, m_description.client, m_description.port);
 }
@@ -348,12 +388,20 @@ MidiCommDescriptionList MidiCommOut::GetDeviceList() {
 
   unsigned int perms = SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE;
   doRetrieveDevices(perms, devices);
-
+  // A native FluidSynth instrument, independent of the ALSA sequencer.
+  MidiCommDescription fluid;
+  fluid.id=devices.size();
+  fluid.name="FluidSynth interno";
+  fluid.client=-1;fluid.port=-1;
+  devices.push_back(fluid);
   return devices;
 }
 
 void MidiCommOut::Write(const MidiEvent &out) {
-
+  if(m_description.client<0){
+    FluidEngine::Send(out);
+    return;
+  }
   snd_seq_event_t ev;
   snd_seq_ev_clear(&ev);
 
@@ -395,6 +443,31 @@ void MidiCommOut::Write(const MidiEvent &out) {
   case MidiEventType_ProgramChange:
     snd_seq_ev_set_pgmchange(&ev, out.Channel(), out.ProgramNumber());
     break;
+  case MidiEventType_Controller: {
+    MidiEventSimple data;
+    if(!out.GetSimpleEvent(&data))return;
+    snd_seq_ev_set_controller(&ev,out.Channel(),data.byte1,data.byte2);
+    break;
+  }
+  case MidiEventType_PitchWheel: {
+    MidiEventSimple data;
+    if(!out.GetSimpleEvent(&data))return;
+    const int bend=int(data.byte1)+(int(data.byte2)<<7)-8192;
+    snd_seq_ev_set_pitchbend(&ev,out.Channel(),bend);
+    break;
+  }
+  case MidiEventType_Aftertouch: {
+    MidiEventSimple data;
+    if(!out.GetSimpleEvent(&data))return;
+    snd_seq_ev_set_keypress(&ev,out.Channel(),data.byte1,data.byte2);
+    break;
+  }
+  case MidiEventType_ChannelPressure: {
+    MidiEventSimple data;
+    if(!out.GetSimpleEvent(&data))return;
+    snd_seq_ev_set_chanpress(&ev,out.Channel(),data.byte1);
+    break;
+  }
 
   // Unknown type, do nothing
   default:
@@ -406,7 +479,11 @@ void MidiCommOut::Write(const MidiEvent &out) {
 }
 
 void MidiCommOut::Reset() {
-
+  if(m_description.client<0){
+    FluidEngine::AllSoundsOff();
+    notes_on.clear();
+    return;
+  }
   // Sent Note-Off to every open note
   snd_seq_event_t ev;
   snd_seq_ev_clear(&ev);
@@ -425,6 +502,7 @@ void MidiCommOut::Reset() {
 }
 
 void MidiCommOut::Reconnect() {
+  if(m_description.client<0)return;
   // We assume, that the client and the port is the same after device's reconnect
   int res = snd_seq_connect_to(alsa_seq, local_out, m_description.client, m_description.port);
 }

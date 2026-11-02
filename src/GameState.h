@@ -64,7 +64,15 @@ enum GameKey {
   KeyBackward = 0x0800,
 
   KeyVolumeUp    = 0x1000,
-  KeyVolumeDown  = 0x2000
+  KeyVolumeDown  = 0x2000,
+  KeyBackspace   = 0x4000,
+  KeyF2          = 0x8000,
+  KeyF3          = 0x10000,
+  KeyF5          = 0x20000,
+  KeyF7          = 0x40000,
+  KeyF8          = 0x80000,
+  KeyF9          = 0x100000,
+  KeyF10         = 0x200000
 
   // = 0x4000
   // = 0x8000
@@ -94,6 +102,7 @@ struct MouseInfo {
 
   int x;
   int y;
+  int wheelY=0; // wheel deltas are transient, like mouse button presses
 
   MouseButtons held;
   MouseButtons newPress;
@@ -130,6 +139,8 @@ protected:
 
   // Called when the game state is finished
   virtual void Finish() {};
+  virtual bool WantsTextInput() const {return false;}
+  virtual void OnTextInput(const std::string&) {}
 
   // Called each frame.  Drawing bounds are [0,
   // GetStateWidth()) and [0, GetStateHeight())
@@ -210,12 +221,15 @@ public:
   void SetInitialState(GameState *first_state);
 
   void KeyPress(GameKey key);
+  bool CapturingText() const;
+  void TextInput(const std::string& text);
   bool IsKeyPressed(GameKey key) const;
   bool IsKeyReleased(GameKey key) const;
 
   void MousePress(MouseButton button);
   void MouseRelease(MouseButton button);
   void MouseMove(int x, int y);
+  void MouseWheel(int deltaY);
   const MouseInfo &Mouse() const { return m_mouse; }
 
   void Update(bool skip_this_update);

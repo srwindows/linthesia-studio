@@ -17,13 +17,13 @@ const static int GraphicHeight = 36;
 
 // Only used here
 const static char* ModeText[Track::ModeCount] = {
-  "Played Automatically",
-  "You Play", // You Press, we help
-  "You Play Silently", // You Play
-  "Learning",
-  "Learning Silently",
-  "Played But Hidden",
-  "Not Played"
+  "Reproducción automática",
+  "Tocas tú", // You Press, we help
+  "Tocas sin sonido MIDI", // You Play
+  "Aprender",
+  "Aprender sin sonido MIDI",
+  "Reproducir sin mostrar",
+  "No reproducir"
 };
 
 TrackTile::TrackTile(int x, int y, size_t track_id, Track::TrackColor color, Track::Mode mode,
@@ -49,6 +49,9 @@ void TrackTile::Update(const MouseInfo &translated_mouse) {
 
   // Update the mouse state of each button
   whole_tile.Update(translated_mouse);
+  m_instrument_hit=translated_mouse.released.left &&
+       translated_mouse.x>=92 && translated_mouse.x<TrackTileWidth-10 &&
+       translated_mouse.y>=7 && translated_mouse.y<34;
   button_preview.Update(translated_mouse);
   button_retry.Update(translated_mouse);
   button_color.Update(translated_mouse);
@@ -79,13 +82,8 @@ void TrackTile::Update(const MouseInfo &translated_mouse) {
   if (button_retry.hit)
     m_retry_on = !m_retry_on;
 
-  if (button_color.hit && m_mode != Track::ModeNotPlayed && m_mode != Track::ModePlayedButHidden) {
-    int color = static_cast<int>(m_color) + 1;
-    if (color >= Track::UserSelectableColorCount)
-      color = 0;
-
-    m_color = static_cast<Track::TrackColor>(color);
-  }
+  // Selección de color gestionada por TrackSelectionState: abrir paleta
+  // en lugar de pasar al siguiente color cada vez que se pulsa el icono.
 
 }
 
@@ -135,7 +133,13 @@ void TrackTile::Draw(Renderer &renderer, const Midi *midi, Tga *buttons, Tga *bo
 
   // Write song info to the tile
   TextWriter instrument(95, 14, renderer, false, 14);
-  instrument << track.InstrumentName();
+  std::string name=m_instrument_program>=0?m_instrument_name:track.InstrumentName();
+  if(name.size()>33)name=name.substr(0,30)+"...";
+  instrument << name;
+  // Affordance: click the instrument name to open the actual SF2 presets.
+  renderer.SetColor(174,222,246);
+  TextWriter marker(TrackTileWidth-22,15,renderer,false,14);
+  marker << Text("▾",Renderer::ToColor(205,245,248));
   TextWriter note_count(95, 35, renderer, false, 14);
   note_count << static_cast<const unsigned int>(track.Notes().size());
 

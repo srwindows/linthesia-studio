@@ -121,8 +121,20 @@ void MidiEvent::ReadMeta(istream &stream) {
   case MidiMetaEvent_SequenceNumber:
   case MidiMetaEvent_EndOfTrack:
   case MidiMetaEvent_SMPTEOffset:
+    break;
   case MidiMetaEvent_TimeSignature:
+    if(meta_length>=2){
+      m_meter_num=static_cast<unsigned char>(buffer[0]);
+      const int exponent=static_cast<unsigned char>(buffer[1]);
+      m_meter_den=exponent<=6?(1<<exponent):4;
+    }
+    break;
   case MidiMetaEvent_KeySignature:
+    if(meta_length>=2){
+      m_key_accidentals=static_cast<signed char>(buffer[0]);
+      m_key_minor=static_cast<unsigned char>(buffer[1])!=0;
+    }
+    break;
   case MidiMetaEvent_Proprietary:
   case MidiMetaEvent_ChannelPrefix:
   case MidiMetaEvent_MidiPort:
@@ -132,7 +144,7 @@ void MidiEvent::ReadMeta(istream &stream) {
 
   default:
     // Ignore unknown event
-    std::cerr << "Ignore unknown midi event type " << (m_meta_type * 1)
+    std::cerr << "Se ignora un evento MIDI desconocido: " << (m_meta_type * 1)
               << " of length " << meta_length << endl;
 //  delete[] buffer;
 //  throw MidiError(MidiError_UnknownMetaEventType);
@@ -261,7 +273,11 @@ void MidiEvent::SetVelocity(int velocity) {
   if (Type() != MidiEventType_NoteOn)
     return;
 
-  m_data2 = static_cast<unsigned char>(velocity);
+  // The transport supports up to 200% velocity, but the MIDI protocol
+  // accepts only 0..127. Casting without clipping wrapped loud notes to
+  // near-zero or invalid velocities, producing unexpectedly faint output.
+  m_data2 = static_cast<unsigned char>(
+      velocity<0?0:(velocity>127?127:velocity));
 }
 
 bool MidiEvent::HasText() const {

@@ -24,7 +24,7 @@ Tga* Tga::Load(const string &resource_name) {
   full_name = string(GRAPHDIR) + "/" + full_name;
   ifstream file(full_name.c_str(), ios::in|ios::binary|ios::ate);
   if (!file.is_open())
-    throw LinthesiaError("Couldn't open TGA resource (" + full_name + ").");
+    throw LinthesiaError("No se pudo abrir el recurso TGA (" + full_name + ").");
 
   int size = file.tellg();
   unsigned char *bytes = new unsigned char[size];
@@ -83,7 +83,7 @@ Tga *Tga::LoadFromData(const unsigned char *bytes) {
     type = TgaCompressed;
 
   if (type == TgaUnknown)
-    throw LinthesiaError("Unsupported TGA type.");
+    throw LinthesiaError("Tipo de imagen TGA no compatible.");
 
   // We're done with the type header
   pos += TgaTypeHeaderLength;
@@ -97,10 +97,10 @@ Tga *Tga::LoadFromData(const unsigned char *bytes) {
   pos += TgaDataHeaderLength;
 
   if (width <= 0 || height <= 0)
-    throw LinthesiaError("Invalid TGA dimensions.");
+    throw LinthesiaError("Dimensiones de TGA incorrectas.");
 
   if (bpp != 24 && bpp != 32)
-    throw LinthesiaError("Unsupported TGA BPP.");
+    throw LinthesiaError("Profundidad de color TGA no compatible.");
 
   const unsigned int data_size = width * height * bpp/8;
   unsigned char *image_data = new unsigned char[data_size];
@@ -166,7 +166,7 @@ Tga *Tga::LoadCompressed(const unsigned char *src, unsigned char *dest,
 	pixel++;
 
 	if (pixel > PixelCount)
-	  throw LinthesiaError("Too many pixels in TGA.");
+	  throw LinthesiaError("La imagen TGA tiene demasiados píxeles.");
       }
     }
 
@@ -189,7 +189,7 @@ Tga *Tga::LoadCompressed(const unsigned char *src, unsigned char *dest,
 	pixel++;
 
 	if (pixel > PixelCount)
-	  throw LinthesiaError("Too many pixels in TGA.");
+	  throw LinthesiaError("La imagen TGA tiene demasiados píxeles.");
 
       }
     }

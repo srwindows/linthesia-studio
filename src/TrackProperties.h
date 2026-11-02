@@ -32,8 +32,10 @@ namespace Track {
   // with a few changes.  (e.g. Chameleon NoteBlack is a little
   // darker to distinguish it from NoteWhite, ScarletRed is a
   // little brighter to make it easier on the eyes, etc.)
-  const static int ColorCount = 8;
-  const static int UserSelectableColorCount = ColorCount - 2;
+  // 16 colores de pista, uno para cada canal/parte, y dos estados internos.
+  // Mantener índices y colores de los seis originales por compatibilidad.
+  const static int UserSelectableColorCount = 16;
+  const static int ColorCount = UserSelectableColorCount + 2;
 
   enum TrackColor {
 
@@ -43,6 +45,16 @@ namespace Track {
     TangoButter,
     TangoPlum,
     TangoScarletRed,
+    Cyan,
+    Turquoise,
+    Emerald,
+    Lime,
+    Coral,
+    Pink,
+    Fuchsia,
+    Indigo,
+    Copper,
+    Olive,
 
     FlatGray,
     MissedNote
@@ -56,6 +68,17 @@ namespace Track {
     { 173, 104, 180, 0xFF },
     { 238,  94,  94, 0xFF },
 
+    {  82, 208, 237, 0xFF },
+    {  68, 212, 189, 0xFF },
+    {  65, 188, 123, 0xFF },
+    { 198, 242,  69, 0xFF },
+    { 255, 141, 109, 0xFF },
+    { 251, 152, 192, 0xFF },
+    { 223, 112, 217, 0xFF },
+    { 147, 130, 244, 0xFF },
+    { 204, 144,  88, 0xFF },
+    { 173, 187,  85, 0xFF },
+
     {  90,  90,  90, 0xFF },
     {  60,  60,  60, 0xFF }
   };
@@ -68,6 +91,17 @@ namespace Track {
     { 255, 218, 251, 0xFF },
     { 255, 178, 178, 0xFF },
 
+    { 171, 244, 255, 0xFF },
+    { 169, 244, 221, 0xFF },
+    { 156, 237, 174, 0xFF },
+    { 232, 255, 157, 0xFF },
+    { 255, 203, 178, 0xFF },
+    { 255, 211, 234, 0xFF },
+    { 253, 188, 244, 0xFF },
+    { 202, 192, 255, 0xFF },
+    { 234, 193, 144, 0xFF },
+    { 213, 226, 133, 0xFF },
+
     { 180, 180, 180, 0xFF },
     {  60,  60,  60, 0xFF }
   };
@@ -79,6 +113,17 @@ namespace Track {
     { 218, 195,   0, 0xFF },
     { 108,  76, 113, 0xFF },
     { 233,  49,  49, 0xFF },
+
+    {   0, 117, 151, 0xFF },
+    {   0, 126, 112, 0xFF },
+    {  16, 110,  63, 0xFF },
+    { 127, 154,   8, 0xFF },
+    { 187,  68,  50, 0xFF },
+    { 183,  70, 120, 0xFF },
+    { 145,  40, 141, 0xFF },
+    {  75,  62, 166, 0xFF },
+    { 123,  77,  37, 0xFF },
+    { 101, 117,  40, 0xFF },
 
     {  90,  90,  90, 0xFF },
     {  60,  60,  60, 0xFF }
@@ -95,6 +140,8 @@ namespace Track {
     Mode mode;
     TrackColor color;
     bool is_retry_on;
+    int instrument_program=-1; // -1: usar el del MIDI
+    int instrument_bank=0;
   };
 
 }; // end namespace

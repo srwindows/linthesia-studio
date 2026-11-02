@@ -30,6 +30,9 @@ install_data(
   ,'title_DirBox.tga'
   ,'title_EmptyBox.tga'
   ,'title_Exit.tga'
+  ,'title_CrearCarpeta.tga'
+  ,'title_Canciones.tga'
+  ,'title_Configuracion.tga'
   ,'title_GameMusicThemes.tga'
   ,'title_InputBox.tga'
   ,'title_Logo.tga'
@@ -45,3 +48,6 @@ install_data(
   'linthesia.png'
   ,install_dir: datadir / 'icons' / 'hicolor' / '128x128' / 'apps'
 )
+
+# Blender-authored selectable scenes, plus animated performance backplates.
+install_subdir('scenarios', install_dir: graphdir)

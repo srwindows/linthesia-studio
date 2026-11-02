@@ -7,6 +7,8 @@
 // See COPYING for license information
 
 #include "Midi.h"
+#include <algorithm>
+#include <iterator>
 #include "MidiEvent.h"
 #include "MidiTrack.h"
 #include "MidiUtil.h"
@@ -14,6 +16,8 @@
 #include <fstream>
 #include <map>
 #include <stdint.h>
+#include <sstream>
+#include <cstring>
 
 using namespace std;
 
@@ -63,15 +67,42 @@ Midi Midi::ReadFromStream(istream &stream) {
       throw MidiError(MidiError_UnknownHeaderType);
 
     else {
-      // We know how to support RIFF files
-      unsigned long throw_away;
-      stream.read(reinterpret_cast<char*>(&throw_away), sizeof(unsigned long)); // RIFF length
-      stream.read(reinterpret_cast<char*>(&throw_away), sizeof(unsigned long)); // "RMID"
-      stream.read(reinterpret_cast<char*>(&throw_away), sizeof(unsigned long)); // "data"
-      stream.read(reinterpret_cast<char*>(&throw_away), sizeof(unsigned long)); // data size
-
-      // Call this recursively, without the RIFF header this time
-      return ReadFromStream(stream);
+      // RIFF/RMID chunks have 32-bit *little-endian* lengths, even on
+      // 64-bit Linux. The old code consumed sizeof(unsigned long) bytes
+      // (8 on Debian x86_64), corrupting the enclosed MIDI header.
+      unsigned char sizeBytes[4]{};
+      char form[4]{};
+      stream.read(reinterpret_cast<char*>(sizeBytes),4);
+      stream.read(form,4);
+      if(!stream || std::memcmp(form,"RMID",4)!=0)
+        throw MidiError(MidiError_UnknownHeaderType);
+      const auto length32=[](const unsigned char b[4])->uint32_t{
+        return uint32_t(b[0]) | uint32_t(b[1])<<8 |
+               uint32_t(b[2])<<16 | uint32_t(b[3])<<24;
+      };
+      const uint32_t riffSize=length32(sizeBytes);
+      uint64_t consumed=4; // form type is already consumed
+      while(consumed+8<=riffSize){
+        char id[4]{};
+        unsigned char byteCount[4]{};
+        stream.read(id,4);
+        stream.read(reinterpret_cast<char*>(byteCount),4);
+        if(!stream)break;
+        const uint32_t chunkSize=length32(byteCount);
+        consumed+=8;
+        if(chunkSize>riffSize-consumed || chunkSize>512u*1024u*1024u)
+          throw MidiError(MidiError_BadHeaderSize);
+        if(std::memcmp(id,"data",4)==0){
+          std::string payload(chunkSize,'\0');
+          stream.read(&payload[0],chunkSize);
+          if(!stream)throw MidiError(MidiError_NoHeader);
+          std::istringstream embedded(payload,std::ios::binary);
+          return ReadFromStream(embedded);
+        }
+        stream.ignore(chunkSize+(chunkSize&1u));
+        consumed+=chunkSize+(chunkSize&1u);
+      }
+      throw MidiError(MidiError_NoHeader);
     }
   }
 
@@ -132,6 +163,8 @@ Midi Midi::ReadFromStream(istream &stream) {
     m.m_tracks[i].SetTrackId(i);
   }
 
+   m.m_pulses_per_quarter_note=pulses_per_quarter_note;
+
    // Translate each track's list of notes and list
    // of events into microseconds.
    for (MidiTrackList::iterator i = m.m_tracks.begin(); i != m.m_tracks.end(); ++i) {
@@ -148,24 +181,60 @@ Midi Midi::ReadFromStream(istream &stream) {
 
    m.m_initialized = true;
 
-   // Just grab the end of the last note to find out how long the song is
-   m.m_microsecond_base_song_length = m.m_translated_notes.rbegin()->end;
+   // Notes are ordered by onset, not by release: an earlier long note can
+   // outlast the last-starting note. Never stop playback before its NoteOff.
+   m.m_microsecond_base_song_length = 0;
+   for(const auto& note:m.m_translated_notes)
+     m.m_microsecond_base_song_length =
+         std::max(m.m_microsecond_base_song_length,note.end);
 
-   // Eat everything up until *just* before the first note event
-   m.m_microsecond_dead_start_air = m.GetEventPulseInMicroseconds(m.FindFirstNotePulse(), pulses_per_quarter_note) - 1;
+   // Empty/metadata-only MIDI has zero duration and no first note offset.
+   // Otherwise eat everything up until just before the first note event.
+   m.m_microsecond_dead_start_air = m.m_translated_notes.empty()?0:
+       m.GetEventPulseInMicroseconds(m.FindFirstNotePulse(), pulses_per_quarter_note) - 1;
 
-   // Calculate positions for bar_lines
-   MidiEventMicrosecondList bar_line_usecs;
-   const microseconds_t len = m.GetSongLengthInMicroseconds();
-   microseconds_t bar_usec = 0;
-   int bar_no = 0;
-   while (bar_usec <= len)
-   {
-       bar_usec = m.GetEventPulseInMicroseconds(bar_no*pulses_per_quarter_note*4, pulses_per_quarter_note);
-       bar_line_usecs.push_back(bar_usec);
-       bar_no++;
+   // Las marcas de compás se calculan en pulsos MIDI y luego se
+   // traducen a microsegundos con el mapa real de tempo.
+   // La firma de tiempo MIDI usa denominadores potencia de dos (2^dd);
+   // no se inventan compases 3/5 ni 6/3 imposibles de codificar.
+   std::map<unsigned long,std::pair<unsigned int,unsigned int>> meters;
+   meters[0]=std::make_pair(4U,4U);
+   for(const MidiTrack &track:m.m_tracks){
+     const auto &ev=track.Events();
+     const auto &pulses=track.EventPulses();
+     for(size_t i=0;i<ev.size() && i<pulses.size();++i){
+       if(ev[i].Type()!=MidiEventType_Meta ||
+          ev[i].MetaType()!=MidiMetaEvent_TimeSignature)continue;
+       const unsigned int n=ev[i].MeterNumerator(),d=ev[i].MeterDenominator();
+       if(n>0 && n<=64 && d>0 && d<=64)
+         meters[pulses[i]]=std::make_pair(n,d);
+     }
    }
-   m.m_bar_line_usecs = bar_line_usecs;
+   unsigned long pulse=0;
+   unsigned int number=1;
+   const microseconds_t total=m.m_microsecond_base_song_length;
+   auto meter=meters.begin();
+   const unsigned long ppq=std::max<unsigned long>(1,pulses_per_quarter_note);
+   while(number<=250000){
+     while(std::next(meter)!=meters.end() && std::next(meter)->first<=pulse)
+       ++meter;
+     const microseconds_t time=m.GetEventPulseInMicroseconds(pulse,pulses_per_quarter_note);
+     if(time>total && number>1)break;
+     m.m_musical_bars.push_back({time,pulse,number,
+                                meter->second.first,meter->second.second});
+     m.m_bar_line_usecs.push_back(time);
+     const unsigned long beats=std::max<unsigned long>(1,meter->second.first);
+     const unsigned long denominator=std::max<unsigned long>(1,meter->second.second);
+     // rounded to the MIDI tick resolution; never generate zero ticks.
+     const unsigned long step=std::max<unsigned long>(
+         1,(beats*ppq*4+denominator/2)/denominator);
+     unsigned long next=pulse+step;
+     if(std::next(meter)!=meters.end() && std::next(meter)->first<next)
+       next=std::next(meter)->first;
+     if(next<=pulse)break;
+     pulse=next;
+     ++number;
+   }
 
    return m;
 }
@@ -489,6 +558,114 @@ unsigned int Midi::AggregateNoteCount() const {
     aggregate += i->AggregateNoteCount();
 
   return aggregate;
+}
+
+unsigned int Midi::GetCurrentBPM() const {
+  if(!m_initialized || m_tracks.empty())return 120;
+  const MidiTrack& tempoTrack=m_tracks.back();
+  const auto& events=tempoTrack.Events();
+  const auto& times=tempoTrack.EventUsecs();
+  unsigned long usPerQuarter=500000;
+  for(size_t i=0;i<events.size() && i<times.size();++i){
+    if(times[i]>std::max<microseconds_t>(0,m_microsecond_song_position))break;
+    if(events[i].Type()==MidiEventType_Meta &&
+       events[i].MetaType()==MidiMetaEvent_TempoChange)
+      usPerQuarter=events[i].GetTempoInUsPerQn();
+  }
+  return usPerQuarter ? static_cast<unsigned int>(
+      60000000.0/usPerQuarter+0.5) : 120;
+}
+
+int Midi::GetCurrentKeyAccidentals() const {
+  if(!m_initialized)return 0;
+  bool found=false;
+  microseconds_t last=0;
+  int accidentals=0;
+  for(const auto& track:m_tracks){
+    const auto& ev=track.Events();
+    const auto& times=track.EventUsecs();
+    for(size_t i=0;i<ev.size() && i<times.size();++i){
+      if(times[i]>std::max<microseconds_t>(0,m_microsecond_song_position))
+        break;
+      if(ev[i].Type()==MidiEventType_Meta &&
+         ev[i].MetaType()==MidiMetaEvent_KeySignature &&
+         (!found||times[i]>=last)){
+        found=true;last=times[i];accidentals=ev[i].KeyAccidentals();
+      }
+    }
+  }
+  return found && accidentals>=-7 && accidentals<=7?accidentals:0;
+}
+
+std::string Midi::GetCurrentKeySignature() const {
+  if(!m_initialized)return "—";
+  const char* major[]={"Dob","Solb","Reb","Lab","Mib","Sib","Fa",
+                       "Do","Sol","Re","La","Mi","Si","Fa#","Do#"};
+  const char* minor[]={"Lab","Mib","Sib","Fa","Do","Sol","Re",
+                       "La","Mi","Si","Fa#","Do#","Sol#","Re#","La#"};
+  microseconds_t last=0;bool found=false,keyMinor=false;int accidentals=0;
+  for(const auto& track:m_tracks){
+    const auto& e=track.Events();const auto& times=track.EventUsecs();
+    for(size_t i=0;i<e.size() && i<times.size();++i){
+      if(times[i]>std::max<microseconds_t>(0,m_microsecond_song_position))break;
+      if(e[i].Type()==MidiEventType_Meta &&
+         e[i].MetaType()==MidiMetaEvent_KeySignature &&
+         (!found || times[i]>=last)){
+        last=times[i];found=true;keyMinor=e[i].IsMinorKey();
+        accidentals=e[i].KeyAccidentals();
+      }
+    }
+  }
+  if(!found||accidentals < -7||accidentals>7)return "—";
+  return std::string(keyMinor?minor[accidentals+7]:major[accidentals+7])+
+         (keyMinor?" menor":" mayor");
+}
+
+std::string Midi::GetCurrentTimeSignature() const {
+  if(!m_initialized)return "—";
+  bool found=false;microseconds_t last=0;int n=4,d=4;
+  for(const auto& track:m_tracks){
+    const auto& e=track.Events();const auto& times=track.EventUsecs();
+    for(size_t i=0;i<e.size() && i<times.size();++i){
+      if(times[i]>std::max<microseconds_t>(0,m_microsecond_song_position))break;
+      if(e[i].Type()==MidiEventType_Meta &&
+         e[i].MetaType()==MidiMetaEvent_TimeSignature &&
+         (!found || times[i]>=last)){
+        found=true;last=times[i];n=e[i].MeterNumerator();
+        d=e[i].MeterDenominator();
+      }
+    }
+  }
+  return found ? std::to_string(n)+"/"+std::to_string(d) : "—";
+}
+
+std::string Midi::GetMusicalPosition(microseconds_t at) const {
+  if(m_musical_bars.empty())return "—";
+  const auto it=std::upper_bound(
+      m_musical_bars.begin(),m_musical_bars.end(),at,
+      [](microseconds_t t,const MusicalBar& b){return t<b.time;});
+  const size_t index=it==m_musical_bars.begin()?0:
+      static_cast<size_t>((it-m_musical_bars.begin())-1);
+  const MusicalBar& bar=m_musical_bars[index];
+  const microseconds_t bounded=std::max(bar.time,at);
+  // Búsqueda inversa por ticks; correcta aun con cambios de tempo.
+  unsigned long lo=bar.pulse,hi=lo+
+      std::max<unsigned long>(1,
+      (bar.numerator*static_cast<unsigned long>(m_pulses_per_quarter_note)*4+
+       bar.denominator/2)/bar.denominator);
+  if(index+1<m_musical_bars.size())
+    hi=m_musical_bars[index+1].pulse;
+  while(lo<hi){
+    const unsigned long mid=lo+(hi-lo+1)/2;
+    if(GetEventPulseInMicroseconds(mid,m_pulses_per_quarter_note)<=bounded)
+      lo=mid;
+    else hi=mid-1;
+  }
+  const double ticksPerBeat=
+      m_pulses_per_quarter_note*4.0/bar.denominator;
+  const unsigned int beat=std::min(bar.numerator,
+      static_cast<unsigned int>((lo-bar.pulse)/ticksPerBeat)+1);
+  return std::to_string(bar.number)+":"+std::to_string(beat);
 }
 
 // This function is used for the progress bar

@@ -19,6 +19,11 @@
 #include "LinthesiaError.h"
 #include "Tga.h"
 #include "Renderer.h"
+#include "UiAppearance.h"
+#include "AdvancedSettings.h"
+#include "FramePacer.h"
+#include <thread>
+#include "RecentSongs.h"
 #include "SharedState.h"
 #include "GameState.h"
 #include "TitleState.h"
@@ -26,6 +31,7 @@
 #include "SongLibState.h"
 
 #include "libmidi/Midi.h"
+#include "MusicXmlImport.h"
 #include "libmidi/MidiUtil.h"
 
 #include <unistd.h>
@@ -52,10 +58,10 @@ sqlite3 *db;
 const static string friendly_app_name = STRING("Linthesia " <<
                                                LinthesiaVersionString);
 
-const static string error_header1 = _("Linthesia detected a");
-const static string error_header2 = _(" problem and must close:\n\n");
-const static string error_footer = _("\n\nIf you don't think this should have "
-  "happened, please fill a bug report on : \nhttps://github.com/linthesia/linthesia\n\nThank you.");
+// These constants initialize before main/setlocale: avoid untranslated gettext.
+const static string error_header1 = "Linthesia ha detectado un";
+const static string error_header2 = " problema y debe cerrarse:\n\n";
+const static string error_footer = "\n\nSi crees que no debería haber ocurrido, puedes notificar el error en:\nhttps://github.com/linthesia/linthesia\n\nGracias.";
 
 const static int vsync_interval = 1;
 
@@ -134,6 +140,7 @@ protected:
 
 
   SDL_Window* m_sdl_window;
+  int m_last_scale=100;
 
 };
 
@@ -144,9 +151,18 @@ void DrawingArea::PollEvent(SDL_Event& event)
     case SDL_MOUSEMOTION:
       on_motion_notify(event.motion);
       break;
+    case SDL_MOUSEWHEEL:
+      if(state_manager)
+        state_manager->MouseWheel(
+           event.wheel.direction==SDL_MOUSEWHEEL_FLIPPED?
+              -event.wheel.y:event.wheel.y);
+      break;
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
       on_button_press(event.button);
+      break;
+    case SDL_TEXTINPUT:
+      if(state_manager)state_manager->TextInput(event.text.text);
       break;
     case SDL_KEYDOWN:
       on_key_press(event.key);
@@ -182,7 +198,9 @@ void DrawingArea::on_window_event(SDL_WindowEvent& event)
 
 bool DrawingArea::on_motion_notify(SDL_MouseMotionEvent& event) {
 
-  state_manager->MouseMove(event.x, event.y);
+  state_manager->MouseMove(
+      UiAppearance::ToLogicalX(event.x,get_width(),get_height()),
+      UiAppearance::ToLogicalY(event.y,get_width(),get_height()));
   return true;
 }
 
@@ -200,6 +218,10 @@ bool DrawingArea::on_button_press(SDL_MouseButtonEvent& event) {
   else
     return false;
 
+  // Use the click's coordinates even if a motion event was not emitted.
+  state_manager->MouseMove(
+      UiAppearance::ToLogicalX(event.x,get_width(),get_height()),
+      UiAppearance::ToLogicalY(event.y,get_width(),get_height()));
   // press or release?
   if (event.state == SDL_PRESSED)
     state_manager->MousePress(b);
@@ -264,6 +286,16 @@ bool __sendNoteOff(int note)
 
 bool DrawingArea::on_key_press(SDL_KeyboardEvent& event) {
 
+  // While typing a folder name, ordinary keys are text, not piano notes.
+  if(state_manager && state_manager->CapturingText()){
+    switch(event.keysym.sym){
+      case SDLK_RETURN: state_manager->KeyPress(KeyEnter); break;
+      case SDLK_ESCAPE: state_manager->KeyPress(KeyEscape); break;
+      case SDLK_BACKSPACE: state_manager->KeyPress(KeyBackspace); break;
+      default: break;
+    }
+    return true;
+  }
   // if is a note...
   int note = keyToNote(event);
   if (note >= 0) {
@@ -291,6 +323,14 @@ bool DrawingArea::on_key_press(SDL_KeyboardEvent& event) {
   case SDLK_ESCAPE:   state_manager->KeyPress(KeyEscape);  break;
 
   // show FPS
+  case SDLK_F2:       state_manager->KeyPress(KeyF2);      break;
+  case SDLK_F3:       state_manager->KeyPress(KeyF3);      break;
+  case SDLK_F5:       state_manager->KeyPress(KeyF5);      break;
+  case SDLK_F7:       state_manager->KeyPress(KeyF7);      break;
+  case SDLK_F8:       state_manager->KeyPress(KeyF8);      break;
+  case SDLK_F9:       state_manager->KeyPress(KeyF9);      break;
+  case SDLK_F10:      state_manager->KeyPress(KeyF10);     break;
+  case SDLK_BACKSPACE: state_manager->KeyPress(KeyBackspace); break;
   case SDLK_F6:       state_manager->KeyPress(KeyF6);      break;
 
   // increase/decrease octave
@@ -313,6 +353,7 @@ bool DrawingArea::on_key_press(SDL_KeyboardEvent& event) {
 
 bool DrawingArea::on_key_release(SDL_KeyboardEvent& event) {
 
+  if(state_manager && state_manager->CapturingText())return true;
   // if is a note...
   int note = keyToNote(event);
   if (note >= 0) 
@@ -341,15 +382,20 @@ void DrawingArea::on_configure_event() {
 
   glShadeModel(GL_SMOOTH);
 
-  glViewport(0, 0, get_width(), get_height());
+  // El framebuffer puede ser 2x/HiDPI aunque la ventana SDL conserve
+  // su tamaño lógico. Evita escalar un framebuffer de baja resolución.
+  int drawableW=0,drawableH=0;
+  SDL_GL_GetDrawableSize(m_sdl_window,&drawableW,&drawableH);
+  glViewport(0,0,std::max(1,drawableW),std::max(1,drawableH));
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(0, get_width(), 0, get_height(), -1, 1);
-
-  state_manager->SetStateDimensions(get_width(), get_height());
+  const int logicalWidth=UiAppearance::LogicalWidth(get_width(),get_height());
+  const int logicalHeight=UiAppearance::LogicalHeight(get_width(),get_height());
+  glOrtho(0, logicalWidth, 0, logicalHeight, -1, 1);
+  m_last_scale=UiAppearance::Scale();
+  state_manager->SetStateDimensions(logicalWidth, logicalHeight);
   state_manager->Update(window_state.JustActivated());
-
-  glEnd();
+  // No emitir glEnd() fuera de glBegin(): originaba GL_INVALID_OPERATION.
 }
 
 void DrawingArea::on_expose_event(SDL_WindowEvent& event) {
@@ -363,7 +409,7 @@ void DrawingArea::on_hide_event(SDL_WindowEvent& event) {
 }
 
 bool DrawingArea::GameLoop() {
-
+  if(m_last_scale!=UiAppearance::Scale())on_configure_event();
   if (window_state.IsActive()) {
 
     state_manager->Update(window_state.JustActivated());
@@ -413,7 +459,7 @@ void show_help() {
      << "\t" << "--min-key" << " " << _("to define min key") << endl
      << "\t" << "--max-key" << " " << _("to define max key") << endl
      << "\t" << "--lib-path" << " " << _("to define directory for music library") << endl
-     << "\t" << "--reset-lib-path" << " " << _("reset directory for music library to "MUSICDIR) << endl
+     << "\t" << "--reset-lib-path" << " " << _("reset directory for music library to ") << MUSICDIR << endl
      << "\t" << "-h, --help" << " " << _("show this help") << endl
      << "\t" << "-v, --version" << " " << _("show linthesia version") << endl
      << endl;
@@ -443,6 +489,8 @@ bool has_invalid_options(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
   setlocale (LC_ALL, "");
+  bindtextdomain("linthesia", LOCALEDIR);
+  bind_textdomain_codeset("linthesia", "UTF-8");
   textdomain("linthesia");
 
   try {
@@ -497,14 +545,32 @@ int main(int argc, char *argv[]) {
         file_opt[file_opt.length()-1] == '\"')
       file_opt = file_opt.substr(0, file_opt.length() - 1);
     
+    // Inicio: retomar la última canción abierta en vez de imponer la demo.
+    // Una ruta -f explícita siempre prevalece. Se comprueba que exista.
+    if(file_opt.empty()){
+      file_opt=RecentSongs::LastSelectedPath();
+      if(file_opt.empty())
+        file_opt=MUSICDIR+std::string("/Favorites/Game_of_Thrones_-_Intro PIANO.mid");
+    }
+
     Midi *midi = 0;
+    std::string imported_score_annotations;
 
     // attempt to open the midi file given on the command line first
     if (file_opt != "") {
       try {
-        midi = new Midi(Midi::ReadFromFile(file_opt));
+        std::string midi_path=file_opt;
+        if(MusicXmlImport::IsXml(file_opt)){
+          midi_path=MusicXmlImport::Convert(file_opt);
+          imported_score_annotations=midi_path+".score.tsv";
+        }
+        midi = new Midi(Midi::ReadFromFile(midi_path));
       }
 
+      catch (const std::exception &e) {
+        Compatible::ShowError(std::string("No se pudo abrir MusicXML: ")+e.what());
+        file_opt="";midi=0;
+      }
       catch (const MidiError &e) {
         string wrapped_description = STRING(_("Problem while loading file: ") <<
                                             file_opt <<
@@ -551,7 +617,11 @@ int main(int argc, char *argv[]) {
 
     const int default_sw = 1280;
     const int default_sh = 720;
-    Uint32 flags = SDL_WINDOW_OPENGL;
+    // Multimuestreo del framebuffer REAL (no un postproceso difuminado).
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,4);
+    Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
 
     // Lauch fullscreen if asked for it OR if neither fullllscreen and windowed is asked AND we are not in jail.
     bool injail = true; // FIXME : how to detect we are injail without doing something nasty ?
@@ -580,8 +650,24 @@ int main(int argc, char *argv[]) {
 
 
     SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
+    if (gl_context == nullptr) {
+      // Equipos sin MSAA: recrear un contexto clásico, sin bloquear Linthesia.
+      SDL_DestroyWindow(sdl_window);
+      SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS,0);
+      SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES,0);
+      sdl_window=SDL_CreateWindow(friendly_app_name.c_str(),
+         SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,
+         default_sw,default_sh,flags);
+      if(sdl_window)gl_context=SDL_GL_CreateContext(sdl_window);
+    }
     if (gl_context == nullptr)
       throw LinthesiaSDLError(_("Could not create GL Context"));
+    int sampleBuffers=0,sampleCount=0;
+    SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS,&sampleBuffers);
+    SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES,&sampleCount);
+    if(sampleBuffers>0 && sampleCount>1)glEnable(GL_MULTISAMPLE);
+    fprintf(stderr,"Linthesia OpenGL: MSAA %dx (buffers=%d)\n",
+            sampleBuffers?sampleCount:0,sampleBuffers);
 
     {
       int w,h;
@@ -615,10 +701,16 @@ int main(int argc, char *argv[]) {
 
     // do this after gl context is created (ie. after da realized)
     SharedState state;
+    state.musicxml_score_path=imported_score_annotations;
     state.dpms_thread = dpms_thread;
     if (midi) {
       state.song_title = FileSelector::TrimFilename(file_opt);
+      // También registrar las canciones abiertas directamente por argumento.
+      char* real_song=realpath(file_opt.c_str(),nullptr);
+      if(real_song){state.song_path=real_song;free(real_song);}
       state.midi = midi;
+      // Se registra solamente tras abrir un MIDI válido.
+      RecentSongs::RememberLastSelected(state.song_path);
       state_manager->SetInitialState(new TitleState(state));
     }
     else {
@@ -657,6 +749,15 @@ int main(int argc, char *argv[]) {
       UserSetting::Set(MAX_KEY_KEY, max_key);
     }
 
+    const auto display=AdvancedSettingsIO::Load();
+    // Usar el contexto SDL real; la antigua función GLX estaba desactivada.
+    // VSync adaptativo permite presentar sin un salto a media frecuencia
+    // cuando un fotograma supera ligeramente su presupuesto.
+    if(SDL_GL_SetSwapInterval(-1)!=0)SDL_GL_SetSwapInterval(1);
+    FramePacer framePacer(display.fps);
+    fprintf(stderr,"Linthesia cadencia: %d FPS, swap interval %d\n",
+            display.fps,SDL_GL_GetSwapInterval());
+    UiAppearance::Configure(display.uiScale,display.theme);
     DrawingArea da(sdl_window);
     da.on_configure_event();
     while (main_loop_running)
@@ -673,6 +774,8 @@ int main(int argc, char *argv[]) {
         }
       }
       da.GameLoop();
+      std::this_thread::sleep_until(
+          framePacer.NextDeadline(FramePacer::Clock::now()));
     }
     midiStop();
     window_state.Deactivate();

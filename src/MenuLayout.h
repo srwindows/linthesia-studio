@@ -68,6 +68,11 @@ namespace Layout {
                   const ButtonState &button,
                   const Tga *tga);
 
+  // El mismo marco/textura de los botones originales, con ancho y alto libres.
+  void DrawCompactButton(Renderer &renderer, const ButtonState &button,
+                         const Tga *chrome, const std::string &caption,
+                         bool selected=false, bool enabled=true, int fontSize=14);
+
   // Pixel margin forced at edges of screen
   const static int ScreenMarginX = 16;
   const static int ScreenMarginY = 86;

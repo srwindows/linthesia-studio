@@ -36,6 +36,8 @@ public:
 
   void Update(const MouseInfo &translated_mouse);
   void Draw(Renderer &renderer) const;
+  // Same original card background and text, without editable arrows/preview.
+  void DrawReadOnly(Renderer &renderer) const;
   void ReplaceDeviceList(const MidiCommDescriptionList &device_list);
 
   int GetX() const {

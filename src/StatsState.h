@@ -12,6 +12,7 @@
 #include "SharedState.h"
 #include "GameState.h"
 #include "MenuLayout.h"
+#include "PracticeHistory.h"
 
 class StatsState : public GameState {
 public:
@@ -33,6 +34,7 @@ private:
   std::string m_tooltip;
 
   SharedState m_state;
+  std::vector<PracticeHistory::Attempt> m_history;
 };
 
 #endif // __STATS_STATE_H

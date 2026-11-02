@@ -42,7 +42,7 @@ namespace Compatible {
     const static string friendly_app_name =
       STRING("Linthesia " << LinthesiaVersionString);
     const static string message_box_title =
-      STRING(friendly_app_name << " Error");
+      STRING(friendly_app_name << " — Error");
 
     printf("%s\n", err.c_str());
     if (sdl_window)
@@ -55,7 +55,9 @@ namespace Compatible {
   }
 
   void HideMouseCursor() {
-    SDL_ShowCursor(SDL_DISABLE);
+    // Keep the system cursor visible in the piano roll too. Hiding it
+    // here made the pointer appear to vanish inside Linthesia.
+    SDL_ShowCursor(SDL_ENABLE);
   }
 
   void ShowMouseCursor() {

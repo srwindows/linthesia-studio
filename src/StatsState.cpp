@@ -7,16 +7,19 @@
 // See COPYING for license information
 
 #include "StatsState.h"
+#include "LearningProgress.h"
 #include "TrackSelectionState.h"
 #include "PlayingState.h"
 #include "Renderer.h"
 #include "Textures.h"
 
 #include <iomanip>
+#include <algorithm>
 
 using namespace std;
 
 void StatsState::Init() {
+  m_history=PracticeHistory::Load(m_state.song_path);
   m_back_button = ButtonState(
       Layout::ScreenMarginX,
       GetStateHeight() - Layout::ScreenMarginY/2 - Layout::ButtonHeight/2,
@@ -55,10 +58,10 @@ void StatsState::Update() {
 
   m_tooltip = "";
   if (m_back_button.hovering)
-    m_tooltip = "Return to the track selection screen.";
+    m_tooltip = "Volver a la selección de pistas.";
 
   if (m_continue_button.hovering)
-    m_tooltip = "Try this song again with the same settings.";
+    m_tooltip = "Volver a tocar esta canción con los mismos ajustes.";
 }
 
 void StatsState::Draw(Renderer &renderer) const {
@@ -145,4 +148,59 @@ void StatsState::Draw(Renderer &renderer) const {
                      renderer, true, Layout::TitleFontSize);
 
   tooltip << m_tooltip;
+
+  // Session history, not merely the historical best raw score.
+  // A visible trend helps the learner decide which hand to practise next.
+  const int hx=28;
+  const int hy=ConstrainedHeight?185:270;
+  renderer.SetColor(18,38,51,230);
+  renderer.DrawQuad(hx-8,hy-14,
+              std::min(390,GetStateWidth()/2-44),243);
+  renderer.SetColor(94,165,182);
+  renderer.DrawQuad(hx-8,hy-14,
+              std::min(390,GetStateWidth()/2-44),2);
+  renderer.SetColor(255,255,255);
+  TextWriter heading(hx,hy,renderer,false,18);
+  heading<<Text("HISTORIAL DE PRÁCTICA",
+                Renderer::ToColor(225,245,250));
+  if(m_history.empty()){
+    TextWriter empty(hx,hy+36,renderer,false,14);
+    empty<<Text("Sin sesiones evaluadas todavía",
+                Renderer::ToColor(180,208,222));
+  }else{
+    const auto learning=LearningProgress::Analyze(m_history);
+    renderer.SetColor(255,255,255);
+    TextWriter advancement(hx,hy+182,renderer,false,13);
+    advancement<<Text(STRING("Progreso: "<<learning.points
+                 <<"/100 · "<<learning.next),
+                 Renderer::ToColor(214,234,156));
+    int best=0;
+    for(const auto& a:m_history)if(a.complete)
+      best=std::max(best,a.Accuracy());
+    const auto& latest=m_history.front();
+    TextWriter summary(hx,hy+28,renderer,false,13);
+    summary<<Text(STRING("Última: "<<latest.Accuracy()<<"%   Mejor: "
+              <<best<<"%   Sesiones: "<<m_history.size()),
+              Renderer::ToColor(180,224,210));
+    for(size_t i=0;i<m_history.size()&&i<5;++i){
+      const auto& a=m_history[i];
+      const int y=hy+56+int(i)*28;
+      renderer.SetColor(255,255,255);
+      TextWriter line(hx,y,renderer,false,13);
+      line<<Text(STRING("#"<<i+1<<"  "
+            <<a.Accuracy()<<"%   "<<a.hit<<"/"<<a.expected
+            <<" notas   "<<a.errors<<" errores   "<<a.bpm<<" BPM"
+            <<(a.complete?"":" · parcial")),
+            Renderer::ToColor(i==0?243:186,i==0?236:204,
+                              i==0?188:218));
+    }
+    if(m_history.size()>=2){
+      const int trend=latest.Accuracy()-m_history[1].Accuracy();
+      renderer.SetColor(255,255,255);
+      TextWriter difference(hx,hy+202,renderer,false,12);
+      difference<<Text(STRING("Variación reciente: "
+                <<(trend>0?"+":"")<<trend<<" puntos"),
+                Renderer::ToColor(180,225,227));
+    }
+  }
 }

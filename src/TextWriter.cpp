@@ -31,7 +31,7 @@ static TTF_Font* get_font(int size, string fontname) {
     std::string font_path = GRAPHDIR + std::string("/") + fontname;
     font = TTF_OpenFont(font_path.c_str(), size);
     if (!font)
-      throw LinthesiaSDLTTFError("unable to load font " + fontname + " from " + font_path);
+      throw LinthesiaSDLTTFError( "No se pudo cargar la fuente " + fontname + " from " + font_path);
     
     font_map[key] = font;
   }
@@ -72,9 +72,9 @@ TextWriter& TextWriter::next_line() {
 
 void Text::DrawText(TextWriter& tw, SDL_Color color, int draw_x, int draw_y) const
 {
-  SDL_Surface* sFont = TTF_RenderText_Blended(tw.font, m_text.c_str(), color);
+  SDL_Surface* sFont = TTF_RenderUTF8_Blended(tw.font, m_text.c_str(), color);
   if (sFont == nullptr)
-    throw LinthesiaSDLTTFError("error rendering text");
+    throw LinthesiaSDLTTFError("Error al dibujar el texto");
 
   GLuint texture;
   glGenTextures(1, &texture);
@@ -125,7 +125,7 @@ TextWriter& Text::operator<<(TextWriter& tw) const {
 void Text::calculate_position_and_advance_cursor(TextWriter &tw, int *out_x, int *out_y) const {
   int w, h;
   if(TTF_SizeUTF8(tw.font, m_text.c_str(), &w, &h)) {
-    throw LinthesiaSDLTTFError("TTF_SizeUTF8 returned an error");
+    throw LinthesiaSDLTTFError("TTF_SizeUTF8 ha devuelto un error");
   }
   if (tw.centered) {
     *out_x = tw.x - w / 2;

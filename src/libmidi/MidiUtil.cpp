@@ -39,252 +39,252 @@ unsigned long parse_variable_length(istream &in) {
 string MidiError::GetErrorDescription() const {
   switch (m_error) {
   case MidiError_UnknownHeaderType:
-    return "Found an unknown header type.\n\nThis probably isn't a valid MIDI file.";
+    return "Cabecera desconocida.\n\nProbablemente no sea un archivo MIDI válido.";
   case MidiError_BadFilename:
-    return "Could not open file for input. Check that file exists.";
+    return "No se pudo abrir el archivo. Comprueba que exista.";
   case MidiError_NoHeader:
-    return "No MIDI header could be read.  File too short.";
+    return "No se puede leer la cabecera MIDI. Archivo demasiado corto.";
   case MidiError_BadHeaderSize:
-    return "Incorrect header size.";
+    return "Tamaño de cabecera incorrecto.";
   case MidiError_Type2MidiNotSupported:
-    return "Type 2 MIDI is not supported.";
+    return "No se admite MIDI de tipo 2.";
   case MidiError_BadType0Midi:
-    return "Type 0 MIDI should only have 1 track.";
+    return "Un MIDI de tipo 0 debe contener una sola pista.";
   case MidiError_SMTPETimingNotImplemented:
-    return "MIDI using SMTP time division is not implemented.";
+    return "No se admite la división temporal SMPTE.";
 
   case MidiError_BadTrackHeaderType:
-    return "Found an unknown track header type.";
+    return "Tipo de cabecera de pista desconocido.";
   case MidiError_TrackHeaderTooShort:
-    return "File terminated before reading track header.";
+    return "El archivo terminó antes de completar la cabecera de pista.";
   case MidiError_TrackTooShort:
-    return "Data stream too short to read entire track.";
+    return "Datos insuficientes para leer toda la pista.";
   case MidiError_BadTrackEnd:
-    return "MIDI track did not end with End-Of-Track event.";
+    return "La pista MIDI no termina con el evento de fin de pista.";
 
   case MidiError_EventTooShort:
-    return "Data stream ended before reported end of MIDI event.";
+    return "Los datos terminaron antes de completar un evento MIDI.";
   case MidiError_UnknownEventType:
-    return "Found an unknown MIDI Event Type.";
+    return "Se ha encontrado un tipo de evento MIDI desconocido.";
   case MidiError_UnknownMetaEventType:
-    return "Found an unknown MIDI Meta Event Type.";
+    return "Tipo de metae­vento MIDI desconocido.";
 
   case MidiError_MM_NoDevice:
-    return "Could not open the specified MIDI device.";
+    return "No se pudo abrir el dispositivo MIDI seleccionado.";
   case MidiError_MM_NotEnabled:
-    return "MIDI device failed enable.";
+    return "No se pudo activar el dispositivo MIDI.";
   case MidiError_MM_AlreadyAllocated:
-    return "The specified MIDI device is already in use.";
+    return "El dispositivo MIDI ya está en uso.";
   case MidiError_MM_BadDeviceID:
-    return "The MIDI device ID specified is out of range.";
+    return "El identificador del dispositivo MIDI está fuera de rango.";
   case MidiError_MM_InvalidParameter:
-    return "An invalid parameter was used with the MIDI device.";
+    return "Parámetro no válido para el dispositivo MIDI.";
   case MidiError_MM_NoDriver:
-    return "The specified MIDI driver is not installed.";
+    return "El controlador MIDI seleccionado no está instalado.";
   case MidiError_MM_NoMemory:
-    return "Cannot allocate or lock memory for MIDI device.";
+    return "No se puede reservar memoria para el dispositivo MIDI.";
   case MidiError_MM_Unknown:
-    return "An unknown MIDI I/O error has occurred.";
+    return "Se ha producido un error desconocido de entrada/salida MIDI.";
 
   case MidiError_NoInputAvailable:
-    return "Attempted to read MIDI event from an empty input buffer.";
+    return "Se intentó leer un evento MIDI de una entrada vacía.";
   case MidiError_MetaEventOnInput:
-    return "MIDI Input device sent a Meta Event.";
+    return "La entrada MIDI ha enviado un metae­vento.";
 
   case MidiError_InputError:
-    return "MIDI input driver reported an error.";
+    return "El controlador de entrada MIDI ha comunicado un error.";
   case MidiError_InvalidInputErrorBehavior:
-    return "Invalid InputError value.  Choices are 'report', 'ignore', and 'use'.";
+    return "Valor no válido de InputError. Opciones: report, ignore y use.";
 
   case MidiError_RequestedTempoFromNonTempoEvent:
-    return "Tempo data was requested from a non-tempo MIDI event.";
+    return "Se solicitaron datos de tempo de un evento que no es de tempo.";
 
   default:
-    return STRING("Unknown MidiError Code (" << m_error << ").");
+    return STRING("Código de error MIDI desconocido (" << m_error << ").");
   }
 }
 
 string GetMidiEventTypeDescription(MidiEventType type) {
   switch (type) {
   case MidiEventType_Meta:             return "Meta";
-  case MidiEventType_SysEx:            return "System Exclusive";
+  case MidiEventType_SysEx:            return "Exclusivo del sistema";
 
-  case MidiEventType_NoteOff:          return "Note-Off";
-  case MidiEventType_NoteOn:           return "Note-On";
-  case MidiEventType_Aftertouch:       return "Aftertouch";
-  case MidiEventType_Controller:       return "Controller";
-  case MidiEventType_ProgramChange:    return "Program Change";
-  case MidiEventType_ChannelPressure:  return "Channel Pressure";
-  case MidiEventType_PitchWheel:       return "Pitch Wheel";
+  case MidiEventType_NoteOff:          return "Nota desactivada";
+  case MidiEventType_NoteOn:           return "Nota activada";
+  case MidiEventType_Aftertouch:       return "Presión posterior";
+  case MidiEventType_Controller:       return "Controlador";
+  case MidiEventType_ProgramChange:    return "Cambio de programa";
+  case MidiEventType_ChannelPressure:  return "Presión de canal";
+  case MidiEventType_PitchWheel:       return "Rueda de afinación";
 
-  case MidiEventType_Unknown:          return "Unknown";
-  default:                             return "BAD EVENT TYPE";
+  case MidiEventType_Unknown:          return "Desconocido";
+  default:                             return "TIPO DE EVENTO NO VÁLIDO";
   }
 }
 
 string GetMidiMetaEventTypeDescription(MidiMetaEventType type) {
   switch (type) {
-  case MidiMetaEvent_SequenceNumber:   return "Sequence Number";
+  case MidiMetaEvent_SequenceNumber:   return "Número de secuencia";
 
   case MidiMetaEvent_Text:             return "Text";
-  case MidiMetaEvent_Copyright:        return "Copyright";
-  case MidiMetaEvent_TrackName:        return "Track Name";
-  case MidiMetaEvent_Instrument:       return "Instrument";
-  case MidiMetaEvent_Lyric:            return "Lyric";
-  case MidiMetaEvent_Marker:           return "Marker";
-  case MidiMetaEvent_Cue:              return "Cue Point";
-  case MidiMetaEvent_PatchName:        return "Patch Name";
-  case MidiMetaEvent_DeviceName:       return "Device Name";
+  case MidiMetaEvent_Copyright:        return "Derechos de autor";
+  case MidiMetaEvent_TrackName:        return "Nombre de pista";
+  case MidiMetaEvent_Instrument:       return "Instrumento";
+  case MidiMetaEvent_Lyric:            return "Letra";
+  case MidiMetaEvent_Marker:           return "Marcador";
+  case MidiMetaEvent_Cue:              return "Punto de referencia";
+  case MidiMetaEvent_PatchName:        return "Nombre de sonido";
+  case MidiMetaEvent_DeviceName:       return "Nombre de dispositivo";
 
-  case MidiMetaEvent_EndOfTrack:       return "End Of Track";
-  case MidiMetaEvent_TempoChange:      return "Tempo Change";
-  case MidiMetaEvent_SMPTEOffset:      return "SMPTE Offset";
-  case MidiMetaEvent_TimeSignature:    return "Time Signature";
-  case MidiMetaEvent_KeySignature:     return "Key Signature";
+  case MidiMetaEvent_EndOfTrack:       return "Fin de pista";
+  case MidiMetaEvent_TempoChange:      return "Cambio de tempo";
+  case MidiMetaEvent_SMPTEOffset:      return "Desfase SMPTE";
+  case MidiMetaEvent_TimeSignature:    return "Compás";
+  case MidiMetaEvent_KeySignature:     return "Tonalidad";
 
-  case MidiMetaEvent_Proprietary:      return "Proprietary";
+  case MidiMetaEvent_Proprietary:      return "Propietario";
 
-  case MidiMetaEvent_ChannelPrefix:    return "(Deprecated) Channel Prefix";
-  case MidiMetaEvent_MidiPort:         return "(Deprecated) MIDI Port";
+  case MidiMetaEvent_ChannelPrefix:    return "Prefijo de canal (obsoleto)";
+  case MidiMetaEvent_MidiPort:         return "Puerto MIDI (obsoleto)";
 
-  case MidiMetaEvent_Unknown:          return "Unknown Meta Event Type";
-  default:                             return "BAD META EVENT TYPE";
+  case MidiMetaEvent_Unknown:          return "Metaevento desconocido";
+  default:                             return "METAEVENTO NO VÁLIDO";
   }
 }
 
 string const InstrumentNames[InstrumentCount] = {
-  "Acoustic Grand Piano",
-  "Bright Acoustic Piano",
-  "Electric Grand Piano",
-  "Honky-tonk Piano",
-  "Electric Piano 1",
-  "Electric Piano 2",
-  "Harpsichord",
-  "Clavi",
+  "Piano de cola acústico",
+  "Piano acústico brillante",
+  "Piano de cola eléctrico",
+  "Piano honky-tonk",
+  "Piano eléctrico 1",
+  "Piano eléctrico 2",
+  "Clave",
+  "Clavinet",
   "Celesta",
   "Glockenspiel",
-  "Music Box",
-  "Vibraphone",
+  "Caja de música",
+  "Vibráfono",
   "Marimba",
-  "Xylophone",
-  "Tubular Bells",
-  "Dulcimer",
-  "Drawbar Organ",
-  "Percussive Organ",
-  "Rock Organ",
-  "Church Organ",
-  "Reed Organ",
-  "Accordion",
-  "Harmonica",
-  "Tango Accordion",
-  "Acoustic Guitar (nylon)",
-  "Acoustic Guitar (steel)",
-  "Electric Guitar (jazz)",
-  "Electric Guitar (clean)",
-  "Electric Guitar (muted)",
-  "Overdriven Guitar",
-  "Distortion Guitar",
-  "Guitar harmonics",
-  "Acoustic Bass",
-  "Electric Bass (finger)",
-  "Electric Bass (pick)",
-  "Fretless Bass",
-  "Slap Bass 1",
-  "Slap Bass 2",
-  "Synth Bass 1",
-  "Synth Bass 2",
-  "Violin",
+  "Xilófono",
+  "Campanas tubulares",
+  "Dulcémele",
+  "Órgano de tiradores",
+  "Órgano de percusión",
+  "Órgano rock",
+  "Órgano de iglesia",
+  "Órgano de lengüetas",
+  "Acordeón",
+  "Armónica",
+  "Acordeón de tango",
+  "Guitarra acústica de nailon",
+  "Guitarra acústica de acero",
+  "Guitarra eléctrica de jazz",
+  "Guitarra eléctrica limpia",
+  "Guitarra eléctrica apagada",
+  "Guitarra con saturación",
+  "Guitarra distorsionada",
+  "Armónicos de guitarra",
+  "Bajo acústico",
+  "Bajo eléctrico con dedos",
+  "Bajo eléctrico con púa",
+  "Bajo sin trastes",
+  "Bajo slap 1",
+  "Bajo slap 2",
+  "Bajo sintetizado 1",
+  "Bajo sintetizado 2",
+  "Violín",
   "Viola",
-  "Cello",
-  "Contrabass",
-  "Tremolo Strings",
-  "Pizzicato Strings",
-  "Orchestral Harp",
-  "Timpani",
-  "String Ensemble 1",
-  "String Ensemble 2",
-  "SynthStrings 1",
-  "SynthStrings 2",
-  "Choir Aahs",
-  "Voice Oohs",
-  "Synth Voice",
-  "Orchestra Hit",
-  "Trumpet",
-  "Trombone",
+  "Violonchelo",
+  "Contrabajo",
+  "Cuerdas con trémolo",
+  "Cuerdas en pizzicato",
+  "Arpa orquestal",
+  "Timbales",
+  "Conjunto de cuerdas 1",
+  "Conjunto de cuerdas 2",
+  "Cuerdas sintéticas 1",
+  "Cuerdas sintéticas 2",
+  "Coro (ah)",
+  "Coro (oh)",
+  "Voz sintetizada",
+  "Golpe orquestal",
+  "Trompeta",
+  "Trombón",
   "Tuba",
-  "Muted Trumpet",
-  "French Horn",
-  "Brass Section",
-  "SynthBrass 1",
-  "SynthBrass 2",
-  "Soprano Sax",
-  "Alto Sax",
-  "Tenor Sax",
-  "Baritone Sax",
+  "Trompeta con sordina",
+  "Trompa",
+  "Sección de metales",
+  "Metales sintéticos 1",
+  "Metales sintéticos 2",
+  "Saxofón soprano",
+  "Saxofón alto",
+  "Saxofón tenor",
+  "Saxofón barítono",
   "Oboe",
-  "English Horn",
-  "Bassoon",
-  "Clarinet",
-  "Piccolo",
-  "Flute",
-  "Recorder",
-  "Pan Flute",
-  "Blown Bottle",
+  "Corno inglés",
+  "Fagot",
+  "Clarinete",
+  "Flautín",
+  "Flauta travesera",
+  "Flauta dulce",
+  "Flauta de pan",
+  "Botella soplada",
   "Shakuhachi",
-  "Whistle",
+  "Silbido",
   "Ocarina",
-  "Lead 1 (square)",
-  "Lead 2 (sawtooth)",
-  "Lead 3 (calliope)",
-  "Lead 4 (chiff)",
-  "Lead 5 (charang)",
-  "Lead 6 (voice)",
-  "Lead 7 (fifths)",
-  "Lead 8 (bass + lead)",
-  "Pad 1 (new age)",
-  "Pad 2 (warm)",
-  "Pad 3 (polysynth)",
-  "Pad 4 (choir)",
-  "Pad 5 (bowed)",
-  "Pad 6 (metallic)",
-  "Pad 7 (halo)",
-  "Pad 8 (sweep)",
-  "FX 1 (rain)",
-  "FX 2 (soundtrack)",
-  "FX 3 (crystal)",
-  "FX 4 (atmosphere)",
-  "FX 5 (brightness)",
-  "FX 6 (goblins)",
-  "FX 7 (echoes)",
-  "FX 8 (sci-fi)",
+  "Solista 1 (onda cuadrada)",
+  "Solista 2 (diente de sierra)",
+  "Solista 3 (calíope)",
+  "Solista 4 (soplo)",
+  "Solista 5 (charang)",
+  "Solista 6 (voz)",
+  "Solista 7 (quintas)",
+  "Solista 8 (bajo y solista)",
+  "Colchón 1 (nueva era)",
+  "Colchón 2 (cálido)",
+  "Colchón 3 (polisintetizador)",
+  "Colchón 4 (coro)",
+  "Colchón 5 (arco)",
+  "Colchón 6 (metálico)",
+  "Colchón 7 (halo)",
+  "Colchón 8 (barrido)",
+  "Efecto 1 (lluvia)",
+  "Efecto 2 (banda sonora)",
+  "Efecto 3 (cristal)",
+  "Efecto 4 (atmósfera)",
+  "Efecto 5 (brillo)",
+  "Efecto 6 (duendes)",
+  "Efecto 7 (ecos)",
+  "Efecto 8 (ciencia ficción)",
   "Sitar",
   "Banjo",
   "Shamisen",
   "Koto",
   "Kalimba",
-  "Bag pipe",
-  "Fiddle",
+  "Gaita",
+  "Violín folk",
   "Shanai",
-  "Tinkle Bell",
-  "Agogo",
-  "Steel Drums",
-  "Woodblock",
-  "Taiko Drum",
-  "Melodic Tom",
-  "Synth Drum",
-  "Reverse Cymbal",
-  "Guitar Fret Noise",
-  "Breath Noise",
-  "Seashore",
-  "Bird Tweet",
-  "Telephone Ring",
-  "Helicopter",
-  "Applause",
-  "Gunshot",
+  "Campanillas",
+  "Agogó",
+  "Tambores metálicos",
+  "Bloque de madera",
+  "Tambor taiko",
+  "Tom melódico",
+  "Batería sintetizada",
+  "Platillo invertido",
+  "Ruido de trastes de guitarra",
+  "Ruido de respiración",
+  "Orilla del mar",
+  "Canto de pájaros",
+  "Timbre de teléfono",
+  "Helicóptero",
+  "Aplausos",
+  "Disparo",
 
   //
   // NOTE: These aren't actually General MIDI instruments!
   //
-  "Percussion", // for Tracks that use Channel 10 or 16
-  "Various"     // for Tracks that use more than one
+  "Percusión", // for Tracks that use Channel 10 or 16
+  "Varios instrumentos"     // for Tracks that use more than one
 };

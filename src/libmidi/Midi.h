@@ -66,6 +66,12 @@ public:
   // (It is also clamped to [0.0, 1.0], so lead-in and lead-out won't give any
   // unexpected results.)
   double GetSongPercentageComplete() const;
+  // Tempo efectivo en la posición del transporte (respeta cambios MIDI).
+  unsigned int GetCurrentBPM() const;
+  std::string GetCurrentKeySignature() const;
+  // Number of key-signature sharps (+) or flats (-), read from the SMF.
+  int GetCurrentKeyAccidentals() const;
+  std::string GetCurrentTimeSignature() const;
 
   // This will report when the lead-out period is complete.
   bool IsSongOver() const;
@@ -76,6 +82,16 @@ public:
   unsigned int AggregateNotesRemain() const;
   unsigned int AggregateNoteCount() const;
 
+  // Marcas de compás verdaderas, incluyendo cambios de métrica MIDI.
+  struct MusicalBar {
+    microseconds_t time;
+    unsigned long pulse;
+    unsigned int number;
+    unsigned int numerator;
+    unsigned int denominator;
+  };
+  const std::vector<MusicalBar>& GetMusicalBars() const { return m_musical_bars; }
+  std::string GetMusicalPosition(microseconds_t at) const;
   const MidiEventMicrosecondList & GetBarLines() const {
    return m_bar_line_usecs;
   }
@@ -123,6 +139,8 @@ private:
   double m_playback_speed;
   MidiTrackList m_tracks;
   MidiEventMicrosecondList m_bar_line_usecs;
+  std::vector<MusicalBar> m_musical_bars;
+  unsigned short m_pulses_per_quarter_note=480;
 };
 
 #endif

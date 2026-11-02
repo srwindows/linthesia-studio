@@ -14,6 +14,10 @@ if get_option('musicdir') != ''
   musicdir = get_option('musicdir')
 endif
 common_flags += [
+  '-DLOCALEDIR="@0@"'.format(prefix / datadir / 'locale'),
+]
+
+common_flags += [
   '-DMUSICDIR="@0@"'.format(prefix / musicdir)
 ]
 
@@ -44,3 +48,5 @@ import('gnome').post_install(
   glib_compile_schemas: true,
   gtk_update_icon_cache: true,
 )
+
+subdir('tests/localizacion')

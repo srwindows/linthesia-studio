@@ -9,6 +9,7 @@
 #include "UserSettings.h"
 #include "StringUtil.h"
 #include <giomm/settings.h>
+#include <giomm/init.h>
 
 using namespace std;
 
@@ -21,6 +22,9 @@ namespace UserSetting {
     if (g_initialized) 
       return;
 
+    // giomm requires its type wrappers to be initialized before the first
+    // Gio::Settings::create(). Without this Gio calls qdata with quark=0.
+    Gio::init();
     settings = Gio::Settings::create(SCHEMA, SCHEMA_PATH);
     g_initialized = true;
   }

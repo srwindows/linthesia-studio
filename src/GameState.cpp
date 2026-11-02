@@ -7,6 +7,7 @@
 // See COPYING for license information
 
 #include "GameState.h"
+#include "UiAppearance.h"
 #include "Renderer.h"
 #include "Textures.h"
 #include "CompatibleSystem.h"
@@ -64,13 +65,16 @@ const static char* TextureResourceNames[_TextureEnumCount] = {
 
   "play_KeyRail", //32
   "play_KeyShadow", //33
-  "play_KeysBlack" //34
+  "play_KeysBlack", //34
+  "title_Canciones", //35
+  "title_Configuracion", //36
+  "title_CrearCarpeta" //37
 };
 
 Tga *GameState::GetTexture(Texture tex_name, bool smooth) const {
 
   if (!m_manager)
-    throw GameStateError("Cannot retrieve texture if manager not set!");
+    throw GameStateError("No se puede acceder a las imágenes sin un gestor activo.");
 
   return m_manager->GetTexture(tex_name, smooth);
 }
@@ -78,7 +82,7 @@ Tga *GameState::GetTexture(Texture tex_name, bool smooth) const {
 void GameState::ChangeState(GameState *new_state) {
 
   if (!m_manager)
-    throw GameStateError("Cannot change state if manager not set!");
+    throw GameStateError("No se puede cambiar de pantalla sin un gestor activo.");
 
   m_manager->ChangeState(new_state);
 }
@@ -86,7 +90,7 @@ void GameState::ChangeState(GameState *new_state) {
 int GameState::GetStateWidth() const {
 
   if (!m_manager)
-    throw GameStateError("Cannot retrieve state width if manager not set!");
+    throw GameStateError("No se puede obtener el ancho sin un gestor activo.");
 
   return m_manager->GetStateWidth();
 }
@@ -94,7 +98,7 @@ int GameState::GetStateWidth() const {
 int GameState::GetStateHeight() const {
 
   if (!m_manager)
-    throw GameStateError("Cannot retrieve state height if manager not set!");
+    throw GameStateError("No se puede obtener la altura sin un gestor activo.");
 
   return m_manager->GetStateHeight();
 }
@@ -102,7 +106,7 @@ int GameState::GetStateHeight() const {
 bool GameState::IsKeyPressed(GameKey key) const {
 
   if (!m_manager)
-    throw GameStateError("Cannot determine key presses if manager not set!");
+    throw GameStateError("No se pueden consultar las teclas sin un gestor activo.");
 
   return m_manager->IsKeyPressed(key);
 }
@@ -110,7 +114,7 @@ bool GameState::IsKeyPressed(GameKey key) const {
 const MouseInfo &GameState::Mouse() const {
 
   if (!m_manager)
-    throw GameStateError("Cannot determine mouse input if manager not set!");
+    throw GameStateError("No se puede consultar el ratón sin un gestor activo.");
 
   return m_manager->Mouse();
 }
@@ -118,7 +122,7 @@ const MouseInfo &GameState::Mouse() const {
 void GameState::SetManager(GameStateManager *manager) {
 
   if (m_manager)
-    throw GameStateError("State already has a manager!");
+    throw GameStateError("Esta pantalla ya tiene un gestor.");
 
   m_manager = manager;
   Init();
@@ -153,6 +157,14 @@ void GameStateManager::SetStateDimensions(int w, int h) {
   if (dirty && m_current_state) {
     m_current_state->Resize();
   }
+}
+
+bool GameStateManager::CapturingText() const {
+ return m_current_state && m_current_state->WantsTextInput();
+}
+void GameStateManager::TextInput(const std::string& text){
+ if(m_current_state && m_current_state->WantsTextInput())
+    m_current_state->OnTextInput(text);
 }
 
 void GameStateManager::KeyPress(GameKey key) {
@@ -203,6 +215,10 @@ void GameStateManager::MouseRelease(MouseButton button) {
   }
 }
 
+void GameStateManager::MouseWheel(int deltaY){
+  m_mouse.wheelY+=deltaY;
+}
+
 void GameStateManager::MouseMove(int x, int y) {
 
   m_mouse.x = x;
@@ -212,8 +228,8 @@ void GameStateManager::MouseMove(int x, int y) {
 void GameStateManager::SetInitialState(GameState *first_state) {
 
   if (m_current_state)
-    throw GameStateError("Cannot set an initial state because GameStateManager"
-                         " already has a state!");
+    throw GameStateError("No se puede establecer la pantalla inicial porque el gestor"
+                         " ya tiene una pantalla activa.");
 
   first_state->SetManager(this);
   m_current_state = first_state;
@@ -222,16 +238,16 @@ void GameStateManager::SetInitialState(GameState *first_state) {
 void GameStateManager::ChangeState(GameState *new_state) {
 
   if (!m_current_state)
-    throw GameStateError("Cannot change state without a state!  "
-                         "Use SetInitialState()!");
+    throw GameStateError("No se puede cambiar de pantalla sin una pantalla inicial. "
+                         "Usa SetInitialState().");
 
   if (!new_state)
-    throw GameStateError("Cannot change to a null state!");
+    throw GameStateError("No se puede abrir una pantalla vacía.");
 
   if (!m_inside_update)
-    throw GameStateError("ChangeState must be called from inside another "
-                         "state's Update() function!  (This is so we can "
-                         "guarantee the ordering of the draw/update calls.)");
+    throw GameStateError("ChangeState debe ejecutarse dentro de la función "
+                         "Update() de otra pantalla (para asegurar "
+                         "el orden de actualización y dibujo).");
 
   m_next_state = new_state;
 }
@@ -293,6 +309,7 @@ void GameStateManager::Update(bool skip_this_update) {
   // Reset our mouse clicks for the next frame
   m_mouse.newPress = MouseButtons();
   m_mouse.released = MouseButtons();
+  m_mouse.wheelY=0;
 }
 
 void GameStateManager::Draw(Renderer &renderer) {
@@ -304,8 +321,9 @@ void GameStateManager::Draw(Renderer &renderer) {
   // the previous state *and* the current state during some transition
   // would be really easy.
 
-  const static float gray = 64.0f / 255.0f;
-  glClearColor(gray, gray, gray, 1.0f);
+  int red=64,green=64,blue=64;
+  UiAppearance::Transform(red,green,blue);
+  glClearColor(red/255.0f,green/255.0f,blue/255.0f,1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glMatrixMode(GL_MODELVIEW);
@@ -314,7 +332,9 @@ void GameStateManager::Draw(Renderer &renderer) {
   glScalef (1., -1., 1.);
   glTranslatef(0.375, 0.375, 0.);
 
+  renderer.BeginPressFrame(m_mouse.x,m_mouse.y,m_mouse.held.left);
   m_current_state->Draw(renderer);
+  renderer.DrawPressFeedback();
 
   if (m_show_fps) {
     renderer.SetColor(White);

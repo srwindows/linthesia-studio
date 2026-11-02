@@ -1,5 +1,7 @@
 # linthesia
 
+**Maintained derivative work / beta:** this repository builds on the upstream [Linthesia](https://github.com/linthesia/linthesia) GPL-licensed project, retaining its history, original authors and licensing. It adds modern MIDI/FluidSynth, practice, 3D and video-export functionality. [Documentación en español y limitaciones conocidas](README_ES.md). The software is under active development and is not a product of the current proprietary Synthesia or SeeMusic projects.
+
 ![Build Status](https://github.com/linthesia/linthesia/actions/workflows/c-cpp.yml/badge.svg)
 
 

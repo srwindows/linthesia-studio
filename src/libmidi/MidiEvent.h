@@ -44,7 +44,9 @@ public:
   // The only reason it's not private is because the standard containers
   // require a default constructor.
   MidiEvent() :
-    m_status(0), m_data1(0), m_data2(0), m_tempo_uspqn(0) {
+    m_status(0), m_data1(0), m_data2(0), m_tempo_uspqn(0),
+    m_key_accidentals(0),m_key_minor(false),
+    m_meter_num(4),m_meter_den(4) {
   }
 
   // Returns true if the event could be expressed in a simple event.  (So, 
@@ -88,6 +90,10 @@ public:
   // Retrieve the tempo from a tempo meta event in microseconds
   // per quarter note.  (Non-meta-tempo events will throw an error).
   unsigned long GetTempoInUsPerQn() const;
+  int KeyAccidentals() const {return m_key_accidentals;}
+  bool IsMinorKey() const {return m_key_minor;}
+  int MeterNumerator() const {return m_meter_num;}
+  int MeterDenominator() const {return m_meter_den;}
 
   // Convenience function: Is this the special End-Of-Track event
   bool IsEnd() const;
@@ -124,6 +130,9 @@ private:
   unsigned char m_meta_type;
 
   unsigned long m_tempo_uspqn;
+  int m_key_accidentals;
+  bool m_key_minor;
+  int m_meter_num,m_meter_den;
   std::string m_text;
 };
 

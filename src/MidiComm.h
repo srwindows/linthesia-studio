@@ -83,6 +83,8 @@ public:
     return m_description;
   }
 
+  bool IsInternalFluid() const { return m_description.client < 0; }
+
   // Send a single event out to the device.
   void Write(const MidiEvent &out);
 

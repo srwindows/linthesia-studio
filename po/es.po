@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: linthesia\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-02-03 22:01+0100\n"
-"PO-Revision-Date: 2022-01-23 20:02+0100\n"
-"Last-Translator: Automatically generated\n"
+"POT-Creation-Date: 2026-10-14 16:30+0200\n"
+"PO-Revision-Date: 2026-10-14 16:30+0200\n"
+"Last-Translator: Traducción al español revisada\n"
 "Language-Team: none\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -20,7 +20,7 @@ msgstr ""
 
 #: extra/linthesia.desktop:4 extra/linthesia.metainfo.xml:6
 msgid "Linthesia"
-msgstr ""
+msgstr "Linthesia"
 
 #: extra/linthesia.desktop:5
 msgid "Piano game"
@@ -39,16 +39,16 @@ msgid ""
 "Linthesia is a game. A game of playing music! You only need a MIDI file to "
 "play, and a MIDI keyboard (or your PC keyboard)."
 msgstr ""
-"Linthesia es un juego. Un juego para tocar música! Solo necesitas un fichero "
-"MIDI para tocar, y un teclado MIDI (o tu teclado de PC)"
+"Linthesia es un programa para aprender a tocar música. Solo necesitas un archivo "
+"MIDI y un teclado MIDI (o el teclado del ordenador)."
 
 #: extra/linthesia.metainfo.xml:14
 msgid ""
 "It's a fork of Synthesia, which only runs on Windows and OS X. Linthesia is "
 "for GNU/Linux."
 msgstr ""
-"Es un fork de Synthesia, que solo funciona en Window y OS X. Linthesia es "
-"para GNU/Linux"
+"Es una adaptación de Synthesia, que originalmente funciona en Windows y macOS. Linthesia está disponible "
+"para GNU/Linux."
 
 #: extra/linthesia.metainfo.xml:31 extra/linthesia.metainfo.xml:41
 msgid "New release"
@@ -73,14 +73,14 @@ msgstr ""
 
 #: src/main.cpp:55
 msgid "Linthesia detected a"
-msgstr "Linthesi detecto un"
+msgstr "Linthesia ha detectado un"
 
 #: src/main.cpp:56
 msgid ""
 " problem and must close:\n"
 "\n"
 msgstr ""
-" problema y tiene que cerrar:\n"
+" problema y debe cerrarse:\n"
 "\n"
 
 #: src/main.cpp:57
@@ -126,11 +126,11 @@ msgstr "para definir tecla máxima"
 
 #: src/main.cpp:415
 msgid "to define directory for music library"
-msgstr "para definir el directorio de la libreria de música"
+msgstr "para elegir la carpeta de la biblioteca musical"
 
 #: src/main.cpp:416
 msgid "reset directory for music library to "
-msgstr "Inicializa el directorio de la libreria de música a "
+msgstr "restablecer la carpeta de la biblioteca musical a "
 
 #: src/main.cpp:417
 msgid "show this help"
@@ -142,20 +142,20 @@ msgstr "muestra la versión de linthesia"
 
 #: src/main.cpp:433
 msgid "Invalid option: "
-msgstr "Opción inválida: "
+msgstr "Opción no válida: "
 
 #: src/main.cpp:447
 msgid "error initializing SDL"
-msgstr "error inicializando SDL"
+msgstr "Error al inicializar SDL"
 
 #: src/main.cpp:504
 msgid "Problem while loading file: "
-msgstr "Problema mientras se cargaba el fichero: "
+msgstr "Error al cargar el archivo: "
 
 #: src/main.cpp:528
 #, c-format
 msgid "Error creating directory : %s\n"
-msgstr "Error creando directorio: %s\n"
+msgstr "Error al crear el directorio: %s\n"
 
 #: src/main.cpp:540
 #, c-format
@@ -168,11 +168,11 @@ msgstr "No se pudo crear la ventana"
 
 #: src/main.cpp:579
 msgid "Could not create GL Context"
-msgstr "No se pudo crear el contexto GL"
+msgstr "No se pudo crear el contexto OpenGL"
 
 #: src/main.cpp:590
 msgid "FATAL : File not found : make install not done ?"
-msgstr "FATAL: Fichero no encontrador: make install no ejecutado?"
+msgstr "ERROR: No se encontró el archivo. ¿Falta instalar Linthesia?"
 
 #: src/main.cpp:596
 msgid "SDL_image could not initialize! SDL_image Error"
@@ -180,15 +180,15 @@ msgstr "SDL_image no se pudo inicializar: SDL_image error"
 
 #: src/main.cpp:599
 msgid "error in TTF_Init"
-msgstr "error en TTF_Init"
+msgstr "Error al inicializar las fuentes"
 
 #: src/main.cpp:604
 msgid "Unable to load image "
-msgstr "Imposible cargar imagen"
+msgstr "No se puede cargar la imagen "
 
 #: src/main.cpp:604
 msgid "! SDL_image Error"
-msgstr "! SDL_image error"
+msgstr ": error de SDL_image"
 
 #: src/main.cpp:637
 msgid ""
@@ -198,12 +198,12 @@ msgid ""
 msgstr ""
 "Configuración inválida para clave 'refresh_rate'.\n"
 "\n"
-"Reseteado a por defecto cuando se recarge"
+"Se restaurará el valor predeterminado al volver a iniciar."
 
 #: src/main.cpp:699
 msgid "Linthesia detected an unknown problem and must close!  '"
-msgstr "Linthesia detectó un problema desconocida y tiene que cerrar! '"
+msgstr "Linthesia ha detectado un problema desconocido y debe cerrarse."
 
 #: src/main.cpp:706
 msgid "Linthesia detected an unknown problem and must close!"
-msgstr "Linthesia detectó un problema desconocida y tiene que cerrar! '"
+msgstr "Linthesia ha detectado un problema desconocido y debe cerrarse."

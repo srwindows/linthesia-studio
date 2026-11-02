@@ -45,13 +45,20 @@ public:
             bool is_retry_on);
 
   void Update(const MouseInfo &translated_mouse);
+  bool HitInstrumentName() const {return m_instrument_hit;}
+  void SetInstrument(int bank,int program,const std::string& name){
+    m_instrument_bank=bank; m_instrument_program=program; m_instrument_name=name;
+  }
+  int InstrumentBank() const {return m_instrument_bank;}
+  int InstrumentProgram() const {return m_instrument_program;}
+
   void Draw(Renderer &renderer, const Midi *midi, Tga *buttons, Tga *box) const;
 
-  int GetX() {
+  int GetX() const {
     return m_x;
   }
 
-  int GetY() {
+  int GetY() const {
     return m_y;
   }
 
@@ -65,6 +72,12 @@ public:
 
   Track::TrackColor GetColor() const {
     return m_color;
+  }
+
+  void SetColor(Track::TrackColor color) {
+    if (static_cast<int>(color) >= 0 &&
+        static_cast<int>(color) < Track::UserSelectableColorCount)
+      m_color = color;
   }
 
   bool HitPreviewButton() const {
@@ -118,6 +131,9 @@ private:
   Track::Mode m_mode;
   Track::TrackColor m_color;
 
+  bool m_instrument_hit=false;
+  int m_instrument_bank=0,m_instrument_program=-1;
+  std::string m_instrument_name;
   bool m_preview_on;
   bool m_retry_on;
 

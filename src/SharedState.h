@@ -70,6 +70,8 @@ struct SharedState {
 
   std::vector<Track::Properties> track_properties;
   std::string song_title;
+  std::string song_path; // Ruta real de la cancion, independientemente de Recientes.
+  std::string musicxml_score_path; // Metadatos de partitura externa, si existen.
   Keyboard keyboard;
 };
 

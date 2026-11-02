@@ -99,3 +99,18 @@ void EnumTile::Draw(Renderer &renderer) const
 
   renderer.ResetOffset();
 }
+
+
+void EnumTile::DrawReadOnly(Renderer &renderer) const {
+  // Mantener dimensiones, marco y textos del selector antiguo.
+  renderer.SetOffset(m_x,m_y);
+  renderer.SetColor(Renderer::ToColor(0xE0,0xE0,0xE0));
+  renderer.DrawTga(m_frame_graphics,0,0);
+  TextWriter mode(44,49,renderer,false,14);
+  mode << m_value.AsText();
+  TextWriter title(17,15,renderer,false,22,"FreeSerif.ttf");
+  title << Text(m_tile_title, TextAttributes(
+      Renderer::ToColor(0xD6,0xD6,0xD6),
+      Renderer::ToColor(0x32,0x32,0x32)));
+  renderer.ResetOffset();
+}

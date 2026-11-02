@@ -29,3 +29,50 @@ config.h.in
 depcomp
 install-sh
 ltmain.sh
+
+# Local compilation / generated Debian release payloads
+/build/
+/build-*/
+/dist/
+/packaging/stage/
+*.deb
+*.AppImage
+*.tar.gz
+*.ffmpeg.log
+
+# User experiments, caches, extracted/commercial reverse-engineering data
+/analysis/
+/auditorias/
+/backups/
+**/__pycache__/
+*.pyc
+*.pyo
+*.log
+*.tmp
+*.swp
+*~
+
+# Machine-specific tests and GUI recordings
+*.bak
+*.bak-*
+*.blend1
+*.blend2
+/assets/scenarios/verificacion/
+/assets/scenarios/blender/PREV_*.png
+/assets/scenarios/blender/pianista_*.png
+/assets/scenarios/blender/vista_*.png
+/assets/scenarios/blender/escenario_*.png
+/assets/scenarios/blender/pianista_animacion_demo.mp4
+/assets/scenarios/blender/antes_y_despues_pianista.png
+/assets/scenarios/blender/vista_previa_siete_escenarios.png
+
+# Local configuration and credentials: never publish personal settings
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+*.token
+credentials.json
+secrets.json

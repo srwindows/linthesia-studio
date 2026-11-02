@@ -18,13 +18,13 @@ string LinthesiaError::GetErrorDescription() const {
     return m_optional_string;
 
   case Error_BadPianoType: 
-    return "Bad piano type specified.";
+    return "Tipo de piano no válido.";
 
   case Error_BadGameState:
-    return "Internal Error: Linthesia entered bad game state!";
+    return "Error interno: estado de juego no válido.";
 
   default:
-    return STRING("Unknown LinthesiaError Code (" << m_error << ").");
+    return STRING("Código de error de Linthesia desconocido (" << m_error << ").");
   }
 }
 

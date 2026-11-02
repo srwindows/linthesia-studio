@@ -91,17 +91,17 @@ std::string KeyboardSize::AsText() const
   switch (value)
   {
     case Size37:
-      return "37 keys";
+      return "37 teclas";
     case Size49:
-      return "49 keys";
+      return "49 teclas";
     case Size61:
-      return "61 keys";
+      return "61 teclas";
     case Size76:
-      return "76 keys";
+      return "76 teclas";
     case Size88:
-      return "88 keys";
+      return "88 teclas";
   }
-  return "unknown";
+  return "desconocido";
 }
 
 

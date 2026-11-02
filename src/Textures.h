@@ -56,7 +56,11 @@ enum Texture {
   PlayKeyShadow, //33
   PlayKeysBlack, //34
 
-  _TextureEnumCount //35
+  ButtonSongs, //35
+  ButtonSettings, //36
+  ButtonCreateFolder, //37
+
+  _TextureEnumCount //38
 };
 
 #endif // __TEXTURES_H
