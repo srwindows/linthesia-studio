@@ -47,3 +47,7 @@ debian/control with a reachable public e-mail address, confirm the relevant
 artwork rights, create an ITP on WNPP, and use a configured GPG signing key.
 Until those tasks are completed, this is an engineering candidate, not an
 approved Debian official source upload.
+
+Version 1.0.0: incorporates effect-speed/palette separation fixes and
+community contribution documentation. The repository code retains 172
+historical MIDI examples, but this Debian source tarball removes them.
