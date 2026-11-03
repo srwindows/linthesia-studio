@@ -359,6 +359,12 @@ void TitleState::Draw(Renderer &renderer) const {
 
   renderer.SetColor(White);
   renderer.DrawTga(GetTexture(TitleLogo), left, TitleY);
+  // Preserve the original GPL project's logo and add the fork's identity
+  // as separately rendered text, rather than altering licensed artwork.
+  TextWriter studioBrand(left+TitleWidth/2-60,
+                         TitleY+(compress_height ? 97 : 117),
+                         renderer,false,16);
+  studioBrand << Text("— STUDIO —",Renderer::ToColor(187,226,238));
   renderer.DrawTga(GetTexture(GameMusicThemes), left+3, TitleY + (compress_height ? 120 : 150) );
 
   TextWriter version(Layout::ScreenMarginX,
