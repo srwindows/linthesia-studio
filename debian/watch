@@ -1,0 +1,3 @@
+version=4
+Opts: filenamemangle=s/.+\/v?(\d[\d.]+(?:-beta\.\d+)?)\.tar\.gz/linthesia-studio-$1.tar.gz/ \
+  https://github.com/srwindows/linthesia-studio/tags .*/v?(\d[\d.]+(?:-beta\.\d+)?)\.tar\.gz

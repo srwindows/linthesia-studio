@@ -1,0 +1,49 @@
+Linthesia - Studio Debian packaging — preliminary development candidate
+====================================================================
+
+The user-visible name is Linthesia - Studio, and the Debian package name is
+linthesia-studio. The program continues to use the /usr/bin/linthesia
+executable and /usr/share/linthesia/ data layout so that existing user
+configurations and MIDI libraries can remain compatible. This build
+therefore conflicts with the older 'linthesia' binary package.
+
+IMPORTANT: NOT CLEARED FOR THE OFFICIAL DEBIAN ARCHIVE YET.
+
+The original Linthesia project contains 172 MIDI compositions, all of
+which are excluded from this Debian-only repacked source archive. Being part of
+the original public code tree is not proof that the underlying musical works
+are freely licensed or that the MIDI arrangements are redistributable.
+Many are recognisable contemporary themes. Their provenance and each relevant
+licence must be documented before they can be restored to a Debian package.
+Users may load MIDI files from their own lawful music libraries.
+
+Graphics/3D models, textures, original artwork and embedded fonts also need a
+complete, documented copyright/DFSG audit. The MakeHuman CC0 reference is
+included in assets/scenarios/blender/humano_cc0/. No copyright claims about
+unverified assets have been invented for this package.
+
+The Debian source package can be compiled and audited as a technical draft;
+it MUST NOT be uploaded to mentors.debian.net or to the official archive
+until the licensing findings are addressed and a maintainer/sponsor reviews
+this package and its build-dependency/test policies.
+
+Build and installation should be tested on an isolated Debian 13 system.
+For video export, ffmpeg must be present. A free SF2 bank is suggested, but
+the application does not bundle user-provided soundfonts.
+
+The source package also includes the Blender material in
+assets/scenarios/blender, 27 Python generator scripts and a CC0 base.obj.
+The 65 runtime .l3d files were regenerated successfully from the scripts
+and an isolated copy of the editable .blend resources. Two were bit-identical
+and 63 different from the published snapshots. This does NOT establish exact
+reproducible artwork or independently prove third-party permissions.
+
+The binary package is split into linthesia-studio (Architecture: any) and
+linthesia-studio-data (Architecture: all) because most runtime data is
+architecture-independent.
+
+DEBIAN MAINTAINER ACTION REQUIRED: replace the GitHub no-reply contact in
+debian/control with a reachable public e-mail address, confirm the relevant
+artwork rights, create an ITP on WNPP, and use a configured GPG signing key.
+Until those tasks are completed, this is an engineering candidate, not an
+approved Debian official source upload.

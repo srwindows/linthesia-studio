@@ -1,0 +1,53 @@
+Source: linthesia-studio
+Section: education
+Priority: optional
+Maintainer: srwindows <121433756+srwindows@users.noreply.github.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ meson,
+ ninja-build,
+ pkgconf,
+ gettext,
+ gtk-update-icon-cache,
+ libasound2-dev,
+ libgl-dev,
+ libglibmm-2.4-dev,
+ libsqlite3-dev,
+ libsdl2-dev,
+ libsdl2-ttf-dev,
+ libsdl2-image-dev,
+ libfluidsynth-dev,
+ libpulse-dev,
+ python3,
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
+Homepage: https://github.com/srwindows/linthesia-studio
+Vcs-Git: https://github.com/srwindows/linthesia-studio.git
+Vcs-Browser: https://github.com/srwindows/linthesia-studio
+
+Package: linthesia-studio
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, linthesia-studio-data (= ${source:Version}), python3, ffmpeg, fonts-freefont-ttf
+Recommends: kdialog | zenity
+Suggests: fluid-soundfont-gm
+Provides: linthesia
+Conflicts: linthesia
+Replaces: linthesia
+Description: piano and MIDI practice game with optional 3D visualisations
+ Linthesia - Studio extends the free Linthesia piano learning game.
+ It offers MIDI playback, a 88-key on-screen keyboard, two-hand practice,
+ instrument selection from SoundFont banks, and falling-note views.
+ .
+ Three-dimensional scenes and video export are available on systems with
+ compatible OpenGL drivers. External MIDI hardware is optional.
+
+Package: linthesia-studio-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: architecture-independent graphics and stage resources for Linthesia - Studio
+ Resources for the Linthesia - Studio interactive piano practice application,
+ including editable and high-definition MIDI stage graphics and 3D models.
+ .
+ This package provides the runtime data used by the separately compiled
+ linthesia-studio executable.

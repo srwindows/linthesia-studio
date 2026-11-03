@@ -1,0 +1,82 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Linthesia - Studio
+Source: https://github.com/srwindows/linthesia-studio
+Files-Excluded: music/**/*.mid music/**/*.midi
+Comment:
+ This is a derived work of the earlier open-source Linthesia project, not an
+ independent upstream replacement. Detailed provenance verification is still
+ required before a Debian-archive upload; see debian/README.Debian.
+
+Files: *
+Copyright: 2007 Nicholas Piegdon
+           Contributors to Linthesia and Linthesia - Studio, see source headers
+License: GPL-2+
+
+Files: assets/scenarios/blender/*.py assets/scenarios/blender/humano_cc0/*.py
+Copyright: 2026 Linthesia - Studio contributors
+License: GPL-2+
+Comment:
+ Python/Blender editing and export source recovered from the development
+ fork. Copyright attribution must be confirmed by the contributors before
+ the Debian NEW review.
+
+Files: assets/scenarios/blender/*.blend assets/blender3d/*.blend graphics/scenarios/*
+Copyright: 2026 Linthesia - Studio contributors
+License: GPL-2+
+Comment:
+ Edited scene models, rendered textures and compiled geometry for this
+ fork; a subset of the human anatomy uses CC0 licensed MakeHuman materials.
+ The rights holder must confirm the legal provenance of all newly modelled
+ materials before any archive upload. The source .blend and exporter scripts
+ are included; the 65 runtime .l3d files regenerate successfully but not
+ identically bit for bit.
+
+Files: assets/scenarios/blender/humano_cc0/base.obj assets/scenarios/blender/humano_cc0/textures/*
+Copyright: 2020 Data Collection AB, Joel Palmius, Jonas Hauquier
+License: CC0-1.0
+Comment:
+ Bundled MakeHuman core resources are CC0; MakeHuman application code is
+ AGPL but no MakeHuman code is bundled with this project.
+
+Files: assets/scenarios/blender/humano_cc0/LICENSE.ASSETS.md assets/scenarios/blender/humano_cc0/README_ORIGEN.md
+Copyright: 2026 Linthesia - Studio contributors
+License: GPL-2+
+Comment:
+ The documentation references MakeHuman CC0 legal text and source material,
+ but is itself written for this GPL fork.
+Comment:
+ Source provenance and full CC0 legal code are contained in
+ assets/scenarios/blender/humano_cc0/{README_ORIGEN.md,LICENSE.ASSETS.md}.
+
+Files: graphics/FreeSans.ttf graphics/FreeSerif.ttf
+Copyright: GNU FreeFont contributors
+License: GPL-3+ with font exception
+Comment:
+ These are bundled GNU FreeFont fonts. Please verify the precise embedded
+ licensing and font exception before submitting to Debian.
+
+Files: extra/linthesia.metainfo.xml
+Copyright: 2026 Linthesia - Studio contributors
+License: CC0-1.0
+
+Files: graphics/InterfaceButtons/OpenSansEmoji.ttf
+Copyright: Google Inc. and contributors
+License: Apache-2.0
+
+License: GPL-2+
+ Licensed under the GNU General Public License, version 2 or later.
+ On Debian systems the full licence is in /usr/share/common-licenses/GPL-2.
+
+License: GPL-3+ with font exception
+ The FreeFont fonts carry the GNU GPL version 3 or later with an exception
+ for documents created using the font. The embedded font copyright notices
+ must be checked. GPL-3 text: /usr/share/common-licenses/GPL-3.
+
+License: Apache-2.0
+ Licensed under the Apache License, version 2.0.
+ The full text is in /usr/share/common-licenses/Apache-2.0.
+
+License: CC0-1.0
+ See assets/scenarios/blender/humano_cc0/LICENSE.ASSETS.md for the complete
+ Creative Commons CC0 1.0 legal code; it must be retained with the sources.
+

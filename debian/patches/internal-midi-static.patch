@@ -1,0 +1,16 @@
+Description: Link private MIDI implementation statically into the application
+ The original libmidi is an implementation detail, not an ABI-stable shared
+ library. Debian packages must not install liblibmidi.so without a SONAME.
+Author: Linthesia - Studio Debian packaging
+Forwarded: not-needed
+--- a/src/libmidi/meson.build
++++ b/src/libmidi/meson.build
+@@ -1,6 +1,6 @@
+-libmidi = library('libmidi',
++libmidi = static_library('libmidi',
+                   'MidiEvent.cpp',
+                   'MidiTrack.cpp',
+                   'Midi.cpp',
+                   'MidiUtil.cpp',
+-                  install : true)
++                  install : false)

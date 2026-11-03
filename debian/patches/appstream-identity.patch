@@ -1,0 +1,34 @@
+Description: Use a proper reverse-DNS AppStream ID for the renamed fork
+ The historical GSettings schema and binary are unchanged to preserve
+ compatibility; this only changes the discoverable AppStream identity.
+Author: Linthesia - Studio Debian packaging
+Forwarded: not-needed
+--- a/extra/linthesia.metainfo.xml
++++ b/extra/linthesia.metainfo.xml
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <component type="desktop-application">
+-  <id>linthesia</id>
++  <id>io.github.srwindows.linthesia_studio</id>
+   <metadata_license>CC0-1.0</metadata_license>
+   <project_license>GPL-2.0-or-later</project_license>
+   <name>Linthesia - Studio</name>
+--- a/extra/meson.build
++++ b/extra/meson.build
+@@ -10,7 +10,7 @@
+ i18n.merge_file(
+   type: 'xml',
+   input: 'linthesia.metainfo.xml',
+-  output: '@0@.metainfo.xml'.format(project_name),
++  output: 'io.github.srwindows.linthesia_studio.metainfo.xml',
+   po_dir: po_dir,
+   install: true,
+   install_dir: datadir / 'metainfo',
+--- a/extra/linthesia.desktop
++++ b/extra/linthesia.desktop
+@@ -5,4 +5,5 @@
+ Comment=Practica piano y MIDI con visualizaciones 3D
+ Icon=linthesia
+ Exec=linthesia
++Keywords=Piano;MIDI;Music;Practice;3D;
+ Categories=Game;Music;Education;

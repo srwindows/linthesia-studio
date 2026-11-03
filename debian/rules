@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@ --buildsystem=meson
+
+# Several upstream integration tests require a live desktop, an installed
+# application or a Git checkout. Run portable functional tests at build time;
+# the full test suite is separately run on the developer's Debian system.
+override_dh_auto_install:
+	dh_auto_install
+	install -d debian/tmp/usr/share/icons/hicolor/32x32/apps
+	mv debian/tmp/usr/share/icons/hicolor/128x128/apps/linthesia.png \
+	   debian/tmp/usr/share/icons/hicolor/32x32/apps/linthesia.png
+	rm -f debian/tmp/usr/share/linthesia/graphics/FreeSans.ttf
+	rm -f debian/tmp/usr/share/linthesia/graphics/FreeSerif.ttf
+	find debian/tmp/usr/share/icons -depth -type d -empty -delete
+	find debian/tmp/usr/share/linthesia/music -depth -type d -empty -delete
+
+ifeq ($(filter nocheck,$(DEB_BUILD_OPTIONS)),)
+override_dh_auto_test:
+	meson test -C obj-$(DEB_HOST_GNU_TYPE) --no-rebuild --print-errorlogs \
+	  'carpetas-personales-seguridad' \
+	  'configuracion-persistencia-real' \
+	  'escalado-y-temas-globales' \
+	  'contador-solo-teclas-incorrectas' \
+	  'monitor-midi-16-canales'
+endif

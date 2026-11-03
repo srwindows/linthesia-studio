@@ -1,0 +1,10 @@
+linthesia-studio (0.8.0~beta1+git20261103+dfsg1-1) unstable; urgency=medium
+
+  * Initial Debian packaging for the Linthesia - Studio fork.
+  * Preserve the original Linthesia upstream copyright and source lineage.
+  * Exclude MIDI files without documented redistribution licences.
+  * Restore 27 editable Blender generators and the original CC0 base mesh.
+  * Verify all 65 3D meshes regenerate from isolated Blender sources.
+  * Fix clean-build GTK build dependency and split arch-independent data.
+
+ -- srwindows <121433756+srwindows@users.noreply.github.com>  Tue, 03 Nov 2026 01:48:43 +0100
