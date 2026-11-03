@@ -1624,10 +1624,22 @@ std::vector<PlayerSettingEntry> PlayerSettingEntries(
       add(701,"Cantidad de partículas",p.effectCount,0,144,12);
       add(702,"Dispersión de partículas",p.effectSpread,0,200,5,"%");
       add(703,"Tamaño de partículas",p.effectSize,25,220,5,"%");
-      add(704,std::string("Colores · ")+Effect3DPalette::Name(p.effectPalette),
+      add(704,std::string("Color SOLO de efectos · ")+Effect3DPalette::Name(p.effectPalette),
           p.effectPalette,0,8,1);
       add(705,"Nacimiento (0 clásico, 1 explosión superior)",
           p.effectBirth,0,1,1);
+      add(706,"Viento de partículas",p.effectWind,0,250,5,"%",false);
+      add(707,"Vida útil de partículas",p.effectLife,25,250,5,"%",false);
+      add(708,"Turbulencia del plasma",p.effectTurbulence,0,200,5,"%",false);
+      add(709,"Velocidad inicial",p.effectInitialVelocity,0,250,5,"%",false);
+      add(710,"Bloom de partículas",p.effectBloom,0,200,5,"%",false);
+      add(711,"Opacidad de partículas",p.effectOpacity,0,100,5,"%",false);
+      add(712,"Mezcla (0 alfa / 1 aditiva)",p.effectBlend,0,1,1,"",true);
+      add(713,"Rayos luminosos",p.effectRays,0,1,1,"",true);
+      add(714,"Humo envolvente",p.effectSmoke,0,1,1,"",true);
+      add(715,"Estelas finas",p.effectTrails,0,1,1,"",true);
+      add(716,"Intensidad de explosión",p.effectExplosion,0,250,5,"%",false);
+      add(717,"Altura de la llama",p.effectFlameHeight,20,130,5,"%",false);
       break;
     case 9: // Escenarios creados en Blender y luces editables
       add(800,std::string("Escenario: ")+StageScenes::Name(StageScenes::ClampPreset(p.scenePreset)),
@@ -1733,6 +1745,18 @@ void SetPlayerSetting(AdvancedSettings& p,int id,int requested){
     case 703: set(p.effectSize,25,220);break;
     case 704: set(p.effectPalette,0,8);break;
     case 705: set(p.effectBirth,0,1);break;
+    case 706: set(p.effectWind,0,250);break;
+    case 707: set(p.effectLife,25,250);break;
+    case 708: set(p.effectTurbulence,0,200);break;
+    case 709: set(p.effectInitialVelocity,0,250);break;
+    case 710: set(p.effectBloom,0,200);break;
+    case 711: set(p.effectOpacity,0,100);break;
+    case 712: set(p.effectBlend,0,1);break;
+    case 713: set(p.effectRays,0,1);break;
+    case 714: set(p.effectSmoke,0,1);break;
+    case 715: set(p.effectTrails,0,1);break;
+    case 716: set(p.effectExplosion,0,250);break;
+    case 717: set(p.effectFlameHeight,20,130);break;
     case 800:{
       const int next=requested<=0?-1:StageScenes::ClampPreset(requested+5);
       if(next>=6 && next!=p.scenePreset){
@@ -1807,6 +1831,18 @@ void PlayingState::SavePlayerSettings(){
      saved.effectSize!=m_midi_preferences.effectSize ||
      saved.effectPalette!=m_midi_preferences.effectPalette ||
      saved.effectBirth!=m_midi_preferences.effectBirth ||
+     saved.effectWind!=m_midi_preferences.effectWind ||
+     saved.effectLife!=m_midi_preferences.effectLife ||
+     saved.effectTurbulence!=m_midi_preferences.effectTurbulence ||
+     saved.effectInitialVelocity!=m_midi_preferences.effectInitialVelocity ||
+     saved.effectBloom!=m_midi_preferences.effectBloom ||
+     saved.effectOpacity!=m_midi_preferences.effectOpacity ||
+     saved.effectBlend!=m_midi_preferences.effectBlend ||
+     saved.effectRays!=m_midi_preferences.effectRays ||
+     saved.effectSmoke!=m_midi_preferences.effectSmoke ||
+     saved.effectTrails!=m_midi_preferences.effectTrails ||
+     saved.effectExplosion!=m_midi_preferences.effectExplosion ||
+     saved.effectFlameHeight!=m_midi_preferences.effectFlameHeight ||
      saved.scenePreset!=m_midi_preferences.scenePreset ||
      saved.sceneLightIntensity!=m_midi_preferences.sceneLightIntensity ||
      saved.sceneLightColor!=m_midi_preferences.sceneLightColor ||
@@ -2070,8 +2106,11 @@ void PlayingState::DrawPlayerSettings(Renderer& renderer) const{
       renderer.DrawQuad(slider.x+2,slider.y+25,
         static_cast<int>((slider.w-4)*fraction),4);
     }
-    text(slider.x+6,slider.y+7,e.toggle?(e.value?"Sí":"No"):
-         std::to_string(e.value)+e.unit,11,Renderer::ToColor(221,249,231));
+    const std::string visibleValue=e.id==712?
+         (e.value?"Aditivo":"Alfa"):
+         (e.toggle?(e.value?"Sí":"No"):std::to_string(e.value)+e.unit);
+    text(slider.x+6,slider.y+7,visibleValue,11,
+         Renderer::ToColor(221,249,231));
     for(int button=0;button<2;++button){
       const auto br=button?win.plus(row):win.minus(row);
       renderer.SetColor(43,110,124);
@@ -3165,6 +3204,18 @@ void PlayingState::Draw(Renderer &renderer) const {
     visual.effectSpeed=p.effectSpeed;visual.effectCount=p.effectCount;
     visual.effectSpread=p.effectSpread;visual.effectSize=p.effectSize;
     visual.effectPalette=p.effectPalette;visual.effectBirth=p.effectBirth;
+    visual.effectWind=p.effectWind;
+    visual.effectLife=p.effectLife;
+    visual.effectTurbulence=p.effectTurbulence;
+    visual.effectInitialVelocity=p.effectInitialVelocity;
+    visual.effectBloom=p.effectBloom;
+    visual.effectOpacity=p.effectOpacity;
+    visual.effectBlend=p.effectBlend;
+    visual.effectRays=p.effectRays;
+    visual.effectSmoke=p.effectSmoke;
+    visual.effectTrails=p.effectTrails;
+    visual.effectExplosion=p.effectExplosion;
+    visual.effectFlameHeight=p.effectFlameHeight;
     visual.scenePreset=p.scenePreset;visual.sceneLightIntensity=p.sceneLightIntensity;
     visual.sceneLightColor=p.sceneLightColor;
     visual.sceneCameraMotion=p.sceneCameraMotion;visual.scenePianistMotion=p.scenePianistMotion;

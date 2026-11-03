@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <vector>
 
-static bool m_vsync_initialized;
 
 class Renderer {
 public:
@@ -45,6 +44,23 @@ public:
     m_effect_birth=std::max(0,std::min(birthMode,1));
   }
 
+  // Independent procedural particle controls; no proprietary SeeMusic code.
+  void SetParticleStudio(int wind,int life,int turbulence,int initialVelocity,
+                         int bloom,int opacity,int blend,int rays,int smoke,
+                         int trails,int explosion,int flameHeight){
+    m_effect_wind=std::max(0,std::min(250,wind));
+    m_effect_life=std::max(25,std::min(250,life));
+    m_effect_turbulence=std::max(0,std::min(200,turbulence));
+    m_effect_initial_velocity=std::max(0,std::min(250,initialVelocity));
+    m_effect_bloom=std::max(0,std::min(200,bloom));
+    m_effect_opacity=std::max(0,std::min(100,opacity));
+    m_effect_blend=std::max(0,std::min(1,blend));
+    m_effect_rays=std::max(0,std::min(1,rays));
+    m_effect_smoke=std::max(0,std::min(1,smoke));
+    m_effect_trails=std::max(0,std::min(1,trails));
+    m_effect_explosion=std::max(0,std::min(250,explosion));
+    m_effect_flame_height=std::max(20,std::min(130,flameHeight));
+  }
   void ForceTexture(unsigned int texture_id);
 
   void SetColor(SDL_Color c);
@@ -128,6 +144,10 @@ private:
   int m_yoffset;
 
   int m_effect_speed=100,m_effect_count=72,m_effect_spread=100,m_effect_size=100;
+  int m_effect_wind=100,m_effect_life=100,m_effect_turbulence=85,m_effect_initial_velocity=100;
+  int m_effect_bloom=115,m_effect_opacity=70,m_effect_blend=0;
+  int m_effect_rays=1,m_effect_smoke=1,m_effect_trails=1;
+  int m_effect_explosion=130,m_effect_flame_height=100;
   int m_effect_birth=1;
   SDL_Window* m_sdl_window;
   GLint m_old_scissor[4]={0,0,0,0};

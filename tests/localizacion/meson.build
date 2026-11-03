@@ -1,6 +1,6 @@
 localizacion_py = find_program('python3')
 test('localizacion-es-ES', localizacion_py,
- args: [files('verificar_es.py'), meson.project_source_root()],
+ args: [files('verificar_es.py'), meson.project_source_root(), get_option('prefix')],
  timeout: 40)
 test('botones-inicio-y-cursor', localizacion_py,
  args: [files('test_botones_inicio.py'), meson.project_source_root()],
@@ -588,3 +588,19 @@ test('exportacion-video-carpeta-elegida-recordada-y-guardar-como',
 test('exportador-recupera-error-ffmpeg-sin-bloquear-reproductor',
  localizacion_py,
  args:[files('test_exporter_failure_recovery.py'),meson.project_source_root()])
+
+test('studio-particulas-12-controles-persistencia-motor-opengl',
+ localizacion_py,
+ args:[files('test_visual_studio_params.py'),meson.project_source_root()])
+
+test('estudio-particulas-12-sliders-inicio-y-reproductor',
+ localizacion_py,
+ args:[files('test_studio_global_sliders.py'),meson.project_source_root()])
+
+test('plasma-volumetrico-tres-halos-turbulencia-gpu-sin-columna-estatica',
+ localizacion_py,
+ args:[files('test_volumetric_plasma_shader.py'),meson.project_source_root()])
+
+test('regresion-velocidad-real-efectos-y-paleta-separada-de-notas',
+ localizacion_py,
+ args:[files('test_effect_speed_palette_isolation.py'),meson.project_source_root()])

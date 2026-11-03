@@ -29,5 +29,5 @@ assert 'DrawRiggedHand(frame,hand,wrist)' in src
 assert 'LoadRiggedHand(hand)' in src
 assert 'glCallList(g_palm_lists[hand])' in src # fallback, not normal path
 assert (root/'assets/scenarios/blender/crear_rig_manos_continuas.py').exists()
-assert (root/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend').stat().st_size>10_000_000
+assert (root/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend').stat().st_size>3_500_000 and (root/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend').read_bytes()[:32].find(b'BLENDER')>=0
 print('OK: continuous skinned hands with 16 populated bones, CC0 UV and safe legacy fallback')

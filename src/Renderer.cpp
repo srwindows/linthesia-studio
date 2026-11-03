@@ -464,6 +464,7 @@ struct NoteFlameFilm {
   GLint timeLocation=-1,contactLocation=-1,bloomLocation=-1;
   GLint birthLocation=-1,birthAgeLocation=-1;
   GLint fuelLocation=-1,widthLocation=-1,originLocation=-1;
+  GLint turbulenceLocation=-1,windLocation=-1;
   GLint extentLocation=-1,tintLocation=-1;
   PFNGLCREATESHADERPROC createShader=nullptr;
   PFNGLSHADERSOURCEPROC shaderSource=nullptr;
@@ -527,6 +528,8 @@ struct NoteFlameFilm {
       uniform float uBloom;
       uniform float uBirth;
       uniform float uBirthAge;
+      uniform float uTurbulence;
+      uniform float uWind;
       // Valor suave, estable y continuo para causticas turbulentas.
       float rand2(vec2 p){
         return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);
@@ -559,20 +562,32 @@ struct NoteFlameFilm {
         if(uBloom>.5){
           float distance=abs(uv.x-.5);
           float height=1.0-uv.y;
-          float radius=uContact>.5 ? mix(.34,.085,height) : .62;
-          float glowSoft=exp(-pow(distance/max(.01,radius),2.0));
+          float age=clamp(uBirthAge,0.0,1.1);
+          float contactWindow=1.0;
           if(uContact>.5){
             if(uBirthAge<0.0||uBirthAge>=1.10){
               gl_FragColor=vec4(0.0);return;
             }
-            glowSoft*=1.0-smoothstep(.15,1.10,uBirthAge);
+            contactWindow=smoothstep(0.0,.11,age)*
+                (1.0-smoothstep(.44,1.10,age));
           }
+          // Nested wide/medium/core Gaussian lobes approximate soft bloom
+          // without an external FBO. They track a travelling plasma envelope.
+          float radius=uContact>.5 ? mix(.60,.23,height) : .62;
+          float glowSoft=exp(-pow(distance/max(.01,radius),2.0));
+          float halo=exp(-pow(distance/max(.01,radius*1.8),2.0));
+          float core=exp(-pow(distance/max(.01,radius*.43),2.0));
           float taper=uContact>.5 ?
-              (1.0-smoothstep(.75,1.0,height)) :
+              (1.0-smoothstep(.79,1.0,height)) :
               (smoothstep(.0,.09,uv.y)*
                (1.0-smoothstep(.91,1.0,uv.y)));
-          float shimmer=.92+.08*sin(t*2.8+height*8.0);
-          gl_FragColor=vec4(uTint,clamp(.105*uFuel*glowSoft*taper*shimmer,0.0,.12));
+          float flutter=.88+.12*fbm(vec2(height*5.2+t*.8,uv.x*2.0));
+          float intermittent=fbm(vec2(uv.x*7.8+t*1.4,height*9.3-t*3.4));
+          float mottling=smoothstep(.36,.73,intermittent+
+                               .14*sin(height*26.0-t*9.8));
+          float luminance=(.031*halo+.046*glowSoft+.051*core)*
+                            taper*flutter*contactWindow*mottling*uFuel;
+          gl_FragColor=vec4(uTint,clamp(luminance,0.0,.22));
           return;
         }
         // Real contact ignition. The particle source is a MIDI NoteOn,
@@ -582,30 +597,51 @@ struct NoteFlameFilm {
           float age=uBirthAge;
           if(age<0.0 || age>=1.10){gl_FragColor=vec4(0.0);return;}
           float rise=(1.0-uv.y)*uExtent.y;
-          float front=age*375.0;  // climbs 300+ screen pixels before vanishing
-          float travel=exp(-pow((rise-front+15.0)/54.0,2.0));
+          float front=age*375.0;
+          // Unlike a single lightning beam, the entire turbulent volume
+          // travels behind the rising ignition front and burns out quickly.
+          float travel=1.0-smoothstep(front-30.0,front+44.0,rise);
+          float attack=smoothstep(.0,.07,age);
+          float release=1.0-smoothstep(.55,1.08,age);
           float lower=smoothstep(-2.0,6.0,rise);
-          float tail=1.0-smoothstep(.62,1.10,age);
-          float curl=fbm(vec2(uv.x*6.5+uTime*1.3,
-                               rise*.065-uTime*10.8));
-          float swirl=(curl-.5)*.21+
-                      .065*sin(rise*.17-age*25.0);
-          float width=mix(.22,.029,clamp(rise/105.0,0.0,1.0));
-          float dx=uv.x-.5-swirl;
-          float mainTongue=exp(-pow(dx/width,2.0));
-          float leftTongue=exp(-pow((dx+.15*sin(rise*.108-age*28.0))/.074,2.0));
-          float rightTongue=exp(-pow((dx-.14*cos(rise*.091-age*24.0))/.071,2.0));
-          float threads=.70*mainTongue+.22*leftTongue+.19*rightTongue;
-          float hetero=.48+.52*fbm(vec2(uv.x*13.0,
-                                        rise*.091-age*16.0));
-          float heat=threads*hetero*travel*lower*tail*uFuel*1.25;
-          float core=clamp(mainTongue*.72*heat,0.0,1.0);
-          vec3 edgeColor=mix(uTint,vec3(.08,.71,.98),.69);
-          vec3 middle=mix(uTint,vec3(1.0,.51,.11),.78);
+          float lift=rise/max(90.0,uExtent.y);
+          float curl=fbm(vec2(uv.x*(4.9+uTurbulence*2.4)+t*1.15,
+                              rise*.028-uTime*(3.5+uTurbulence*5.0)));
+          float fold=fbm(vec2(uv.x*7.2+curl*2.0+t*.55,
+                              rise*.053-uTime*7.5));
+          float turbulence=(curl-.5)*(.11+.14*uTurbulence)+
+                           .085*sin(rise*.055-age*14.0+fold*4.5)*uTurbulence;
+          float drift=(rise*.15/max(1.0,uExtent.x))*uWind;
+          float warpX=uv.x-.5-turbulence-drift;
+          // 3 loosely coupled branches of volumetric plasma. The width
+          // narrows as it rises but never collapses into a static hairline.
+          float width=mix(.29,.13,clamp(lift,0.0,1.0));
+          float primary=exp(-pow(warpX/width,2.0));
+          float branchA=exp(-pow((warpX-.15*sin(rise*.036-age*17.0+fold*4.0))/.13,2.0));
+          float branchB=exp(-pow((warpX+.13*cos(rise*.048-age*13.0+curl*5.0))/.11,2.0));
+          float gas=fbm(vec2(uv.x*8.3+fold*1.3,
+                             rise*.065-age*(5.7+3.2*uTurbulence)));
+          float veins=pow(max(0.0,1.0-abs(sin(
+                       rise*.076-uv.x*17.0-age*11.0+curl*7.0))),4.0);
+          float body=(.52*primary+.29*branchA+.26*branchB);
+          // The gas is discontinuous and branched: never a solid tube.
+          // Multiple moving cellular bands form detached tongues that
+          // extinguish quickly instead of a persistent rectangular glow.
+          float density=.51*gas+.49*fold+.23*veins+
+                        .10*sin(rise*.113-age*24.0+curl*8.0);
+          float occupancy=smoothstep(.43,.77,density);
+          float edgebreak=1.0-smoothstep(.27,.50,abs(warpX));
+          float texturedCore=mix(.18,1.0,occupancy)*edgebreak;
+          float localFlicker=.67+.33*sin(rise*.10-age*27.0+curl*9.0);
+          float energy=body*texturedCore*localFlicker*travel*lower*
+                       attack*release*uFuel*1.12;
+          float bright=clamp(energy*(.46+.57*veins),0.0,1.0);
+          vec3 edgeColor=mix(uTint,vec3(.08,.71,.98),.16);
+          vec3 middle=mix(uTint,vec3(1.0,.93,.85),.24);
           vec3 inner=vec3(1.0,.95,.76);
-          vec3 flameColor=mix(edgeColor,middle,clamp(heat*1.8,0.0,1.0));
-          flameColor=mix(flameColor,inner,clamp(core*.68,0.0,.68));
-          gl_FragColor=vec4(flameColor,clamp(heat*.80,0.0,.60));
+          vec3 flameColor=mix(edgeColor,middle,clamp(energy*.85,0.0,1.0));
+          flameColor=mix(flameColor,inner,clamp(bright*.49,0.0,.49));
+          gl_FragColor=vec4(flameColor,clamp(energy*.77,0.0,.61));
           return;
         }
         float edge=abs(uv.x-.5)*2.0;
@@ -618,8 +654,9 @@ struct NoteFlameFilm {
         float pixelY=uv.y*uExtent.y;
         float mask=smoothstep(.0,9.0,pixelY)*
                    (1.0-smoothstep(uExtent.y-9.0,uExtent.y,pixelY));
-        vec2 advect=vec2(uv.x*3.8+sin(flow*11.8-t*1.8)*.23,
-                         flow*8.8-t*1.75);
+        vec2 advect=vec2(uv.x*3.8+
+                         sin(flow*11.8-t*(1.0+.8*uTurbulence))*(.13+.10*uTurbulence)+uWind*.07,
+                         flow*8.8-t*(1.25+.50*uTurbulence));
         float warp=fbm(advect);
         float fold=fbm(vec2(uv.x*5.2+warp*2.3+t*.37,
                              flow*10.8-warp*1.4-t*2.20));
@@ -686,8 +723,8 @@ struct NoteFlameFilm {
         float localFlame=(.06+.79*tip1+.34*tip2)*
                          (1.0-smoothstep(.76,1.0,edge));
         float localAlpha=clamp(emission*localFlame*1.55,0.0,.72);
-        vec3 coolFire=mix(uTint,vec3(.12,.66,.96),.61);
-        vec3 warmFire=mix(uTint,vec3(1.0,.57,.16),.72);
+        vec3 coolFire=mix(uTint,vec3(.12,.66,.96),.15);
+        vec3 warmFire=mix(uTint,vec3(1.0,.94,.84),.22);
         vec3 whiteHot=vec3(1.0,.96,.81);
         vec3 fire=mix(coolFire,warmFire,clamp(tip1*.85,0.0,1.0));
         fire=mix(fire,whiteHot,clamp(tip2*.56,0.0,.56));
@@ -728,6 +765,8 @@ struct NoteFlameFilm {
       }else {
         // Las ubicaciones pertenecen al programa enlazado, no al fotograma.
         timeLocation=getUniformLocation(program,"uTime");
+        turbulenceLocation=getUniformLocation(program,"uTurbulence");
+        windLocation=getUniformLocation(program,"uWind");
         contactLocation=getUniformLocation(program,"uContact");
         bloomLocation=getUniformLocation(program,"uBloom");
         birthLocation=getUniformLocation(program,"uBirth");
@@ -744,10 +783,13 @@ struct NoteFlameFilm {
   }
   bool draw(int x,int y,int w,int h,int xOffset,int yOffset,
             SDL_Color tint,float time,float remaining,float glow,
-            bool contact=false,bool birth=false,float birthAge=-1.0f){
+            bool contact=false,bool birth=false,float birthAge=-1.0f,
+            float turbulence=1.0f,float wind=0.0f){
     init();
     if(!program)return false;
     const GLboolean depthWasEnabled=glIsEnabled(GL_DEPTH_TEST);
+    GLboolean depthWriteWasEnabled=GL_TRUE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK,&depthWriteWasEnabled);
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     useProgram(program);
@@ -755,6 +797,8 @@ struct NoteFlameFilm {
     uniform1f(contactLocation,contact?1.0f:0.0f);
     uniform1f(birthLocation,birth&&!contact?1.0f:0.0f);
     uniform1f(birthAgeLocation,birthAge);
+    uniform1f(turbulenceLocation,turbulence);
+    uniform1f(windLocation,wind);
     // The impact used to be almost invisible at ordinary scene glow values:
     // its visual gain was multiplied twice by the small master glow.
     // Keep musical opacity, but give each short-lived ignition enough energy.
@@ -792,7 +836,7 @@ struct NoteFlameFilm {
     }
     useProgram(0);
     glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glDepthMask(GL_TRUE);
+    glDepthMask(depthWriteWasEnabled);
     if(depthWasEnabled)glEnable(GL_DEPTH_TEST);
     return true;
   }
@@ -927,7 +971,8 @@ void Renderer::DrawNeonCapsule(int x,int y,int w,int h,int radius,
       flameFilm().draw(x,y,w,h,m_xoffset,m_yoffset,base,phase*(m_effect_speed/100.0f),
                        NoteEmitter::Smooth(10.0f,24.0f,float(h))*releaseFade,
                        float(glow),false,m_effect_birth==1,
-                       birthAge>=0?birthAge*m_effect_speed/100.0f:-1.0f);
+                       birthAge>=0?birthAge*m_effect_speed/100.0f:-1.0f,
+                       m_effect_turbulence/100.f,m_effect_wind/100.f);
   if(cinematic && h>=10 && w>=5 && !filmDrawn){
     const GLboolean depthWasEnabled=glIsEnabled(GL_DEPTH_TEST);
     glDisable(GL_DEPTH_TEST);
@@ -1238,14 +1283,23 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
                                         float animationTime,float releaseFade){
   // One MIDI NoteOn triggers a cinematic explosion, tall rising flame and
   // colored translucent smoke. It never stays still for an entire sustain.
-  if(strength<=0 || keyWidth<3 || elapsed<0.0f ||
-     elapsed>=1.10f || releaseFade<=0.0f)return;
+  // Una sola escala de tiempo para TODOS los efectos de impacto.
+  // 25% lento, 100% normal, 200% doble rapidez. El reloj MIDI no cambia.
+  const float effectAge=elapsed*(m_effect_speed/100.f);
+  const float maxLife=1.10f*m_effect_life/100.f;
+  if(strength<=0 || keyWidth<3 || effectAge<0.0f ||
+     effectAge>=maxLife || releaseFade<=0.0f)return;
+  const float lifeScale=m_effect_life/100.f;
+  const float velocityScale=.42f+1.23f*m_effect_initial_velocity/100.f;
+  const float turbulence=m_effect_turbulence/100.f;
+  const float wind=m_effect_wind/100.f;
+  const float opacityScale=m_effect_opacity/100.f;
   releaseFade=std::max(0.0f,std::min(1.0f,releaseFade));
   // La fase visual es continua entre golpes; la edad solo gobierna
   // nacimientos de partículas, nunca sustituye un emisor por otro.
   const float phase=(animationTime>=0.0f?animationTime:elapsed)*
                     (m_effect_speed/100.0f);
-  const float attack=NoteEmitter::Smooth(0.0f,.10f,elapsed);
+  const float attack=NoteEmitter::Smooth(0.0f,.10f,effectAge);
   ForceTexture(0);
   // Malla de emisión GPU derivada de la duración MIDI y del estado
   // efectivo de la tecla; mantiene el color del carril sin volverse blanca.
@@ -1253,31 +1307,35 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
   int windowW=1280,windowH=720;
   if(m_sdl_window)SDL_GetWindowSize(m_sdl_window,&windowW,&windowH);
   // Near HALF the live 3D scene, regardless of MIDI tempo or key width.
-  const int plumeH=std::max(90,std::min(int(windowH*.47f),keyTop-95));
-  const int plumeW=std::max(40,int(keyWidth*3.0f));
+  const int plumeH=std::max(90,std::min(int(windowH*.47f*m_effect_flame_height/100.f),keyTop-95));
+  const int plumeW=std::max(54,int(keyWidth*(2.25f+m_effect_spread/100.f)));
   flameFilm().draw(cx-plumeW/2,keyTop-plumeH,plumeW,plumeH,
-                   m_xoffset,m_yoffset,accent,phase,.90f*attack*releaseFade,
-                   float(strength),true,false,elapsed);
+                   m_xoffset,m_yoffset,accent,phase,
+                   .90f*attack*releaseFade*opacityScale*(m_effect_bloom/100.f),
+                   float(strength),true,false,effectAge/lifeScale,
+                   turbulence,wind);
   const float power=std::min(1.02f,std::max(.10f,strength/105.0f))*releaseFade;
   const GLboolean depthWasEnabled=glIsEnabled(GL_DEPTH_TEST);
+  GLboolean depthWriteWasEnabled=GL_TRUE;
+  glGetBooleanv(GL_DEPTH_WRITEMASK,&depthWriteWasEnabled);
   glDisable(GL_DEPTH_TEST);
   glDepthMask(GL_FALSE);
-  glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+  glBlendFunc(GL_SRC_ALPHA,m_effect_blend?GL_ONE:GL_ONE_MINUS_SRC_ALPHA);
   // La luz retenida se libera de golpe en la superficie del piano.
-  const float blast=NoteEmitter::Smooth(0.0f,.025f,elapsed)*
-      (1.0f-NoteEmitter::Smooth(.025f,.23f,elapsed));
-  if(blast>0.0f){
+  const float blast=NoteEmitter::Smooth(0.0f,.025f,effectAge)*
+      (1.0f-NoteEmitter::Smooth(.025f,.23f,effectAge));
+  if(blast>0.0f && m_effect_explosion>0){
     glBegin(GL_TRIANGLE_FAN);
     SetColor(std::min(255,int(accent.r*.48f+127)),
              std::min(255,int(accent.g*.48f+117)),
              std::min(255,int(accent.b*.48f+104)),
-             int(205*power*blast));
+             std::min(240,int(205*power*blast*m_effect_explosion/130.f*opacityScale)));
     glVertex3f(cx+m_xoffset,keyTop-3+m_yoffset,0);
     for(int i=0;i<=32;++i){
       const float a=6.2831853f*i/32.0f;
       const float radiusX=std::max(13.0f,keyWidth*1.5f)+
-                           elapsed*110.0f;
-      const float radiusY=12.0f+elapsed*92.0f;
+                           effectAge*110.0f;
+      const float radiusY=12.0f+effectAge*92.0f;
       SetColor(accent.r,accent.g,accent.b,0);
       glVertex3f(cx+std::cos(a)*radiusX+m_xoffset,
                  keyTop-3+std::sin(a)*radiusY+m_yoffset,0);
@@ -1290,19 +1348,22 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
   // All four user parameters are consumed in the actual renderer.
   // Time scaling changes motion only; NoteOn/NoteOff is untouched.
   // Saturation control: rapid chords retain distinct colors, not a white blob.
-  const unsigned activeCount=std::min(unsigned(m_effect_count)/2u,42u);
-  const float visualAge=elapsed*m_effect_speed/100.0f;
+  const unsigned activeCount=std::min(unsigned(m_effect_count),96u);
+  const float visualAge=effectAge/lifeScale;
   const float spread=std::min(1.35f,m_effect_spread/100.0f);
   const float particleSize=std::min(1.10f,m_effect_size/100.0f);
   glBegin(GL_TRIANGLES);
   for(unsigned i=0;i<activeCount;++i){
     const auto particle=NoteEmitter::Sample(visualAge,i,seed,float(keyWidth),
                                             spread,particleSize,activeCount);
-    const float px=cx+particle.x;
-    const float py=keyTop+particle.y;
+    const float px=cx+particle.x*(.50f+.50f*turbulence)+
+      wind*(9.f*visualAge)+std::sin(phase*2.5f+float(i))*(turbulence*6.f);
+    const float py=keyTop+particle.y*velocityScale;
     const float size=particle.size;
-    const float opacity=1.0f-NoteEmitter::Smooth(.12f,.32f,elapsed);
-    const int alpha=std::min(155,int(142.0f*particle.alpha*power*opacity));
+    const float opacity=1.0f-NoteEmitter::Smooth(.19f*lifeScale,
+                                                 1.05f*lifeScale,effectAge);
+    const int alpha=std::min(218,int(173.0f*particle.alpha*power*opacity*
+                                opacityScale*(m_effect_bloom/110.f)));
     if(alpha<=0)continue;
     const float xx=px+m_xoffset,yy=py+m_yoffset;
     const int cr=std::min(255,int(32.0f+accent.r*.79f));
@@ -1311,12 +1372,12 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
     // Estela real de 65 ms siguiendo la curva anterior de ESTA partícula.
     // No une generaciones distintas ni añade órbitas o segmentos fijos.
     // Mitad de las partículas para que los acordes conserven su fluidez.
-    if((i&1u)==0u && alpha>14 && visualAge>.065f){
+    if(m_effect_trails && (i&1u)==0u && alpha>14 && visualAge>.065f){
       const auto previous=NoteEmitter::Sample(
           visualAge-.065f,i,seed,float(keyWidth),
           spread,particleSize,activeCount);
       const float dx=particle.x-previous.x;
-      const float dy=particle.y-previous.y;
+      const float dy=(particle.y-previous.y)*velocityScale;
       const float length2=dx*dx+dy*dy;
       if(previous.alpha>.055f && length2>1.0f && length2<420.0f){
         const float invLength=1.0f/std::sqrt(length2);
@@ -1326,8 +1387,8 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
         glVertex3f(xx+nx*halfWidth,yy+ny*halfWidth,.02f);
         glVertex3f(xx-nx*halfWidth,yy-ny*halfWidth,.02f);
         SetColor(accent.r,accent.g,accent.b,0);
-        glVertex3f(cx+previous.x+m_xoffset,
-                   keyTop+previous.y+m_yoffset,.02f);
+        glVertex3f(cx+previous.x+wind*9.f*visualAge+m_xoffset,
+                   keyTop+previous.y*velocityScale+m_yoffset,.02f);
       }
     }
     for(int j=0;j<4;++j){
@@ -1345,16 +1406,17 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
   glEnd();
   // Extra brief ignition synchronized with each NoteOn; these sparks
   // rise and become transparent in ~0.3 s, without replacing any 3D mesh.
-  if(elapsed<ImpactFlameEmitter::Duration){
+  if(m_effect_explosion && effectAge<ImpactFlameEmitter::Duration*lifeScale){
     glBegin(GL_TRIANGLES);
     for(unsigned i=0;i<24;++i){
-      const auto spark=ImpactFlameEmitter::Sample(elapsed,i,seed,float(keyWidth),
+      const auto spark=ImpactFlameEmitter::Sample(effectAge/lifeScale,i,seed,float(keyWidth),
                                                  spread,particleSize);
       if(spark.alpha<=0.0f)continue;
       const float sx=cx+spark.x+m_xoffset;
-      const float sy=keyTop+spark.y+m_yoffset;
+      const float sy=keyTop+spark.y*velocityScale+m_yoffset;
       const float radius=std::max(.35f,spark.radius);
-      const int alpha=std::min(125,int(spark.alpha*112.0f*power));
+      const int alpha=std::min(205,int(spark.alpha*132.0f*power*
+                                opacityScale*m_effect_explosion/100.f));
       SDL_Color c=accent;
       if(spark.core>.82f){
         c.r=std::min(255,int(c.r*.46f+125));
@@ -1369,18 +1431,102 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
     }
     glEnd();
   }
+  // Filaments of electrical plasma follow different curved trajectories.
+  // The filaments have independent release times and produce branching light;
+  // no pre-rendered asset and no proprietary shader is used.
+  if(m_effect_rays){
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+    const float age=effectAge/lifeScale;
+    for(unsigned ray=0;ray<11;++ray){
+      const float birth=.025f*ray+.027f*NoteEmitter::Random(seed,ray+181u);
+      const float t=age-birth;
+      if(t<=0.f||t>=.84f)continue;
+      const float head=NoteEmitter::Smooth(0.f,.75f,t)*plumeH*.95f;
+      const float tail=std::min(head,(22.f+60.f*NoteEmitter::Random(seed,ray+113u)));
+      const float fade=NoteEmitter::Smooth(0.f,.08f,t)*
+                       (1.f-NoteEmitter::Smooth(.42f,.84f,t));
+      const float spreadSign=NoteEmitter::Random(seed,ray+98u)<.5f?-1.f:1.f;
+      const float offset=spreadSign*(2.f+keyWidth*.70f*NoteEmitter::Random(seed,ray+312u));
+      const float width=(.42f+.85f*NoteEmitter::Random(seed,ray+511u))*m_effect_size/100.f;
+      glBegin(GL_TRIANGLE_STRIP);
+      for(int j=0;j<=18;++j){
+        const float f=j/18.f;
+        const float h=std::max(0.f,head-tail*(1.f-f));
+        const float turbulenceWobble=(3.f+9.f*turbulence)*
+          std::sin(h*.067f+phase*2.3f+float(ray)*.89f)*turbulence;
+        const float secondary=std::sin(h*.22f-phase*4.2f+float(ray)*1.71f)*3.f*turbulence;
+        const float drift=wind*h*.14f;
+        const float x=cx+offset+turbulenceWobble+secondary+drift+m_xoffset;
+        const float y=keyTop-h+m_yoffset;
+        const float glow=std::sin(3.14159265f*f)*fade;
+        const int alpha=std::min(218,int((92.f+70.f*glow)*glow*opacityScale*m_effect_bloom/100.f));
+        SetColor(std::min(255,int(accent.r*.72f+64)),
+                 std::min(255,int(accent.g*.76f+56)),
+                 std::min(255,int(accent.b*.84f+39)),alpha);
+        glVertex3f(x-width,y,.032f);
+        SetColor(accent.r,accent.g,accent.b,int(alpha*.29f));
+        glVertex3f(x+width,y,.032f);
+      }
+      glEnd();
+    }
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  }
+  // A cloud of tiny glowing plasma droplets forms near each lightning
+  // branch. Unlike fixed decals these scatter continuously; the brightest
+  // centers stay a fraction of a second and are colored by the same note.
+  if(m_effect_rays && m_effect_count>0){
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE);
+    const int droplets=std::min(52,m_effect_count/2+3);
+    for(int n=0;n<droplets;++n){
+      const float wait=(.012f*float(n%13)+.16f*NoteEmitter::Random(seed,n*73u))*lifeScale;
+      const float time=effectAge-wait;
+      const float lifespan=(.23f+.44f*NoteEmitter::Random(seed,n*11u+19u))*lifeScale;
+      if(time<=0.f||time>=lifespan)continue;
+      const float u=time/lifespan;
+      const float xSpread=(NoteEmitter::Random(seed,n*49u+7u)-.5f)*
+                    (float(plumeW)*.56f+u*20.f*spread);
+      const float curl=std::sin(u*(5.f+14.f*turbulence)+float(n)*2.9f+phase)*
+                       (3.f+9.f*turbulence);
+      const float drift=wind*19.f*u;
+      const float rise=plumeH*(.14f+.67f*NoteEmitter::Random(seed,n*67u+13u))*
+                        (u*u*(3.f-2.f*u));
+      const float cx0=cx+xSpread+curl+drift+m_xoffset;
+      const float cy0=keyTop-rise+m_yoffset;
+      const float radius=(.9f+3.f*NoteEmitter::Random(seed,n*17u+33u))*
+                           std::min(2.2f,m_effect_size/100.f);
+      const float envelope=NoteEmitter::Smooth(0.f,.14f,u)*
+                       (1.f-NoteEmitter::Smooth(.55f,1.f,u));
+      const int alpha=std::min(213,int(162.f*envelope*opacityScale*
+                                  m_effect_bloom/110.f));
+      if(alpha<=0)continue;
+      glBegin(GL_TRIANGLE_FAN);
+      SetColor(std::min(255,int(accent.r*.63f+92)),
+               std::min(255,int(accent.g*.65f+88)),
+               std::min(255,int(accent.b*.72f+70)),alpha);
+      glVertex3f(cx0,cy0,.035f);
+      for(int k=0;k<=12;++k){
+        const float angle=float(k)*6.2831853f/12.f;
+        SetColor(accent.r,accent.g,accent.b,0);
+        glVertex3f(cx0+std::cos(angle)*radius*2.3f,
+                   cy0+std::sin(angle)*radius*2.3f,.035f);
+      }
+      glEnd();
+    }
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  }
   // Swirling smoke wraps the traveling fire, never a frozen image.
   // Blended translucently (not additive) so pale clouds preserve the scene.
   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-  for(unsigned i=0;i<25;++i){
-    const float delay=.016f*i+NoteEmitter::Random(seed,i*27u)*.09f;
-    const float lifetime=.53f+.37f*NoteEmitter::Random(seed,i*61u+9u);
-    const float life=(elapsed-delay)/lifetime;
+  if(m_effect_smoke)for(unsigned i=0;i<30;++i){
+    const float delay=(.009f*i+NoteEmitter::Random(seed,i*27u)*.06f)*lifeScale;
+    const float lifetime=(.64f+.40f*NoteEmitter::Random(seed,i*61u+9u))*lifeScale;
+    const float life=(effectAge-delay)/lifetime;
     if(life<=0.0f||life>=1.0f)continue;
     const float rise=life*life*(3.0f-2.0f*life);
     const float height=(80.f+plumeH*.65f*NoteEmitter::Random(seed,i*23u+5u))*rise;
-    const float drift=std::sin(life*8.0f+i*1.71f)*
-                    (7.f+15.f*rise)*std::min(1.5f,spread);
+    const float drift=std::sin(life*(8.0f+9.f*turbulence)+i*1.71f)*
+                    (7.f+15.f*rise)*std::min(1.5f,spread)*turbulence+
+                    wind*24.f*life;
     const float scatter=(NoteEmitter::Random(seed,i*97u+13u)-.5f)*
                          (13.f+26.f*rise)*std::min(1.5f,spread);
     const float sx=cx+drift+scatter+m_xoffset;
@@ -1388,7 +1534,7 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
     const float rad=(5.f+9.f*NoteEmitter::Random(seed,i*19u+31u))*(.8f+1.6f*rise);
     const float fade=NoteEmitter::Smooth(0.f,.14f,life)*
                    (1.f-NoteEmitter::Smooth(.48f,1.f,life));
-    const int alpha=int(std::max(0.f,std::min(65.f,44.f*fade*power)));
+    const int alpha=int(std::max(0.f,std::min(90.f,64.f*fade*power*opacityScale)));
     if(alpha<=0)continue;
     const int cr=std::min(255,int(.29f*accent.r+94));
     const int cg=std::min(255,int(.39f*accent.g+100));
@@ -1406,7 +1552,7 @@ void Renderer::DrawPianoImpactParticles(int cx,int keyTop,int keyWidth,
     glEnd();
   }
   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-  glDepthMask(GL_TRUE);
+  glDepthMask(depthWriteWasEnabled);
   if(depthWasEnabled)glEnable(GL_DEPTH_TEST);
 }
 

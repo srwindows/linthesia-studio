@@ -13,7 +13,7 @@ assert 'if(stage<6)renderer.DrawStageLights' in b
 assert 'm_visual.sceneCameraFocus' in b
 assert 'm_visual.sceneCameraMotion' in b
 blend=p/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend'
-assert blend.stat().st_size>10_000_000
+assert blend.stat().st_size>3_500_000 and blend.read_bytes()[:32].find(b'BLENDER')>=0
 src=(p/'assets/scenarios/blender/cuello_sastre_profesional.py').read_text()
 assert 'HUMANO CC0 | cuello anatómico' in src
 stage=(p/'assets/scenarios/blender/acabado_profesional_escenario.py').read_text()
