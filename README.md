@@ -4,6 +4,12 @@
 
 **GitHub:** https://github.com/srwindows/linthesia-studio
 
+## Community project / Proyecto comunitario
+
+**Free to use, study, modify, share and contribute to under the GPL.** Anyone can propose improvements through Issues and Pull Requests. The project welcomes voluntary maintainers, including volunteers for Debian packaging; no individual is committed to maintaining the software indefinitely. This is **GPL-licensed free software, not a public-domain dedication**, and third-party credits and licensing remain in force.
+
+See [How to contribute](CONTRIBUTING.md) and [Community principles (Español)](COMMUNITY.md).
+
 
 Linthesia - Studio builds on the original open-source Linthesia project, itself a fork of the earlier Synthesia software. It is a game of playing music using a MIDI keyboard (or your PC keyboard), following a .mid file.
 

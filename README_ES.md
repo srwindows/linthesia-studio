@@ -2,6 +2,14 @@
 
 **Repositorio del fork:** https://github.com/srwindows/linthesia-studio
 
+## Proyecto comunitario de software libre
+
+**Cualquiera puede utilizar, estudiar, modificar y compartir Linthesia - Studio y aportar mejoras bajo la GPL.** Se aceptan propuestas en GitHub Issues y contribuciones mediante Pull Requests; las revisiones dependen de colaboradores voluntarios, sin obligación de mantenimiento permanente por parte de ninguna persona. También buscamos voluntarios para el empaquetado Debian.
+
+No se declara el código de terceros de **dominio público**: se respetan la licencia GPL y los derechos y créditos de Linthesia y sus autores originales.
+
+Consulta [cómo colaborar](CONTRIBUTING.md) y los [principios de la comunidad](COMMUNITY.md).
+
 **Origen del proyecto:** [linthesia/linthesia](https://github.com/linthesia/linthesia).
 Linthesia es software libre derivado de trabajo previo; **no se presenta como una aplicación creada desde cero**. Se conservan los derechos y créditos de los autores originales, incluido Nicholas Piegdon y la adaptación de Oscar Aceña, y la licencia incluida en [`COPYING`](COPYING) (GNU GPL v2, conforme a los avisos del código original). Los cambios añadidos deben mantener los avisos y licencias correspondientes. No se incorpora código propietario actual de Synthesia ni SeeMusic.
 
