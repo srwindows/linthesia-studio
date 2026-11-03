@@ -1,0 +1,8 @@
+# Files produced by dpkg-buildpackage/debhelper; never commit generated output.
+/files
+/.debhelper/
+/*.substvars
+/*.debhelper.log
+/linthesia-studio/
+/linthesia-studio-data/
+/linthesia-studio-dbgsym/
