@@ -38,12 +38,15 @@ except ImportError:
     Image=None
 if Image:
     new=Image.open(root/'graphics/InterfaceButtons.tga').convert('RGBA')
-    old=Image.open(root/'graphics/InterfaceButtons.tga.bak-20261017-sixteen-colors').convert('RGBA')
-    assert new.size==(972,648) and old.size==(972,252)
-    assert all(new.crop((0,i*36,972,(i+1)*36)).tobytes() ==
-               old.crop((0,i*36,972,(i+1)*36)).tobytes() for i in range(6))
-    assert all(new.crop((0,i*36,972,(i+1)*36)).tobytes()==
-               old.crop((0,216,972,252)).tobytes() for i in (16,17))
+    # Canonical per-row hashes from the original six-color public atlas.
+    # Store checksums, NOT an untracked machine-specific .bak file.
+    import hashlib
+    preserved_row_sha256 = ['52a6ec9c2e4732158fbd9d3f419c853c31ffb8561d1af805d173222ff7c50239', 'fd11f033365363cbcbccf023427d223a83ba08d122d1b70a6ada839934273aa9', '312e60c8786b0e68c4cd027ef756cffd080a225b38bff5875cbd616e845e2d89', '27243699832ada827f028285a4a0e2207e8e23087f7f3f60146b740d45ac629c', '24eb93c7e2faea5f8502beba56f7a147f11e61a485095e91044eb5961ea50250', 'af6e7bc6f392f158aaacd0aea184f186e7688a657665f07c6d9c73ed525244c6', '3833ec3d91c2b5ee09344ddcab1cd9b2b44b1738518fbbc8c9bcd7a7d93533f7']
+    assert new.size==(972,648)
+    for i in range(6):
+        assert hashlib.sha256(new.crop((0,i*36,972,(i+1)*36)).tobytes()).hexdigest()==preserved_row_sha256[i]
+    for i in (16,17):
+        assert hashlib.sha256(new.crop((0,i*36,972,(i+1)*36)).tobytes()).hexdigest()==preserved_row_sha256[6]
     # Comparación de pulsación real en cuatro contextos independientes.
     lab=Path('/tmp/linthesia-16-colors-pressure-lab')
     for before,pressed in [

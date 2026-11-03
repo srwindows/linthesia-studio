@@ -36,6 +36,18 @@ struct PlayerVisual {
  bool shadows=true;
  int effectSpeed=100,effectCount=72,effectSpread=100,effectSize=100;
  int effectPalette=0,effectBirth=1;
+ int effectWind=100;
+ int effectLife=100;
+ int effectTurbulence=85;
+ int effectInitialVelocity=100;
+ int effectBloom=115;
+ int effectOpacity=70;
+ int effectBlend=0;
+ int effectRays=1;
+ int effectSmoke=1;
+ int effectTrails=1;
+ int effectExplosion=130;
+ int effectFlameHeight=100;
  int scenePreset=-1,sceneLightIntensity=55,sceneLightColor=0;
  int sceneCameraMotion=40,scenePianistMotion=55;
  int sceneYaw=92,scenePitch=26,sceneZoom=405;

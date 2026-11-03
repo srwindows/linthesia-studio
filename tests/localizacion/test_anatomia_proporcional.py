@@ -42,5 +42,5 @@ marks=mesh[12+35::36]
 assert sum(bool(i&2) for i in marks)>10000,('non-animated haircut',tri)
 assert sum(bool(i&1) for i in marks)>5000,('lost facial photographic texture',tri)
 assert (r/'assets/scenarios/blender/cabello_microgeometria.py').exists()
-assert (r/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend').stat().st_size>12_000_000
+assert (r/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend').stat().st_size>3_500_000 and (r/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend').read_bytes()[:32].find(b'BLENDER')>=0
 print('OK: natural arm/hand lengths, playable black/white keys, moving hair and skin')

@@ -11,7 +11,7 @@ assert 'sounding||releasing' in kbd
 assert 'if(m_render_3d && visual_end<=current_time && !releasing)' in kbd
 assert 'impact.fade' in kbd
 assert 'const float flightAge=it->second.visual.age+sinceRelease;' in kbd
-assert 'flightAge>=1.10f' in kbd
+assert 'flightAge*(m_visual.effectSpeed/100.f)>=1.10f' in kbd
 assert 'm_release_impacts.erase(current.first)' in kbd
 assert 'm_previous_impacts=m_current_impacts' in kbd
 assert 'm_frame_active_keys[name]=handColor' in kbd

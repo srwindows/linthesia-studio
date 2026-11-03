@@ -52,6 +52,19 @@ struct AdvancedSettings {
  int effectSpeed=100,effectCount=72,effectSpread=100,effectSize=100;
  int effectPalette=0; // 0 = original channel colors; 1-8 = built-in palettes.
  int effectBirth=1; // 0 = clásico, 1 = explosión superior descendente.
+ // SeeMusic visual references: our own independent and persistent GPU effects.
+ int effectWind=100;
+ int effectLife=100;
+ int effectTurbulence=85;
+ int effectInitialVelocity=100;
+ int effectBloom=115;
+ int effectOpacity=70;
+ int effectBlend=0;
+ int effectRays=1;
+ int effectSmoke=1;
+ int effectTrails=1;
+ int effectExplosion=130;
+ int effectFlameHeight=100;
  int scenePreset=-1; // -1 without stage; internal 6..12 -> user-visible 1..7.
  int sceneLightIntensity=55,sceneLightColor=0;
  int sceneCameraMotion=40,scenePianistMotion=55;

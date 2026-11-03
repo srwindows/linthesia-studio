@@ -8,8 +8,8 @@ assert 'bloomLocation=getUniformLocation(program,"uBloom");' in r
 assert 'uniform1f(bloomLocation,pass==0?1.0f:0.0f);' in r
 assert 'glBlendFunc(GL_SRC_ALPHA,pass==0?GL_ONE:GL_ONE_MINUS_SRC_ALPHA);' in r
 assert 'float glowSoft=exp(-pow(distance/max(.01,radius),2.0));' in r
-assert 'const int plumeW=std::max(40,int(keyWidth*3.0f));' in r
-assert 'const int plumeH=std::max(90,std::min(int(windowH*.47f),keyTop-95));' in r
+assert 'const int plumeW=std::max(54,int(keyWidth*(2.25f+m_effect_spread/100.f)));' in r
+assert 'const int plumeH=std::max(90,std::min(int(windowH*.47f*m_effect_flame_height/100.f),keyTop-95));' in r
 assert 'ImpactFlameEmitter::Sample(' in r
 assert 'const float remaining=1.0f;' in r
 assert 'const float fuel=1.0f;' in r

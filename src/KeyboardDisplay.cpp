@@ -88,6 +88,7 @@ void KeyboardDisplay::Draw(Renderer &renderer, const Tga *key_tex[3], const Tga 
   m_visual=visual;
   renderer.SetEffect3D(m_visual.effectSpeed,m_visual.effectCount,
                        m_visual.effectSpread,m_visual.effectSize,m_visual.effectBirth);
+  renderer.SetParticleStudio(m_visual.effectWind,m_visual.effectLife,m_visual.effectTurbulence,m_visual.effectInitialVelocity,m_visual.effectBloom,m_visual.effectOpacity,m_visual.effectBlend,m_visual.effectRays,m_visual.effectSmoke,m_visual.effectTrails,m_visual.effectExplosion,m_visual.effectFlameHeight);
   m_render_3d=perspective3d;
   m_cinematic_3d=perspective3d && style3D==2;
   // Los eventos NoteOn/NoteOff pueden perderse tras un salto temporal
@@ -403,7 +404,8 @@ void KeyboardDisplay::Draw(Renderer &renderer, const Tga *key_tex[3], const Tga 
       // reach 40-47% of the scene height before dissipating.
       const float sinceRelease=float(current_time-it->second.noteOff)/1000000.f;
       const float flightAge=it->second.visual.age+sinceRelease;
-      if(sinceRelease<0.f || flightAge>=1.10f){
+      if(sinceRelease<0.f ||
+         flightAge*(m_visual.effectSpeed/100.f)>=1.10f*m_visual.effectLife/100.f){
         it=m_release_impacts.erase(it);continue;
       }
       auto last=it->second.visual;
@@ -468,9 +470,8 @@ void KeyboardDisplay::DrawWhiteKeys(Renderer &renderer, bool active_only, int ke
     }
 
     if ((active_only && active) || !active_only) {
-      if(m_render_3d && active)
-        c=Effect3DPalette::TrackTint(c,m_visual.effectPalette,
-                                 static_cast<int>(find_result->second));
+      // El teclado sigue el color REAL de la pista MIDI. La paleta de
+      // efectos solo colorea llamas/particulas, no la tecla ni la nota.
       c.a=static_cast<Uint8>(std::max(20,std::min(100,m_visual.keyOpacity))*255/100);
       renderer.SetColor(c);
 
@@ -485,7 +486,9 @@ void KeyboardDisplay::DrawWhiteKeys(Renderer &renderer, bool active_only, int ke
           if(hit!=m_impact_started.end()){
             const ImpactVisual impact={key_x+key_width/2,y_offset,
                key_width,(m_effect_frame_ticks-hit->second)/1000.0f,
-               c,NoteParticleSeed(note_name)};
+               Effect3DPalette::Color(Track::ColorNoteWhite[find_result->second],
+                   m_visual.effectPalette,static_cast<int>(find_result->second)),
+               NoteParticleSeed(note_name)};
             m_impact_visuals.push_back(impact);
             m_current_impacts[note_name]=impact;
           }
@@ -586,10 +589,9 @@ void KeyboardDisplay::DrawBlackKeys(Renderer &renderer, const Tga *tex, bool act
           const float depression=travel!=m_key_travel.end()?travel->second:0.0f;
           const Track::TrackColor color=active?find_result->second:
                (cue?cueIt->second:Track::FlatGray);
+          // Colores de las teclas: exclusivamente el de la pista.
           const SDL_Color accent=active||cue?
-               Effect3DPalette::TrackTint(Track::ColorNoteHit[color],
-                                       m_visual.effectPalette,int(color)):
-               Renderer::ToColor(40,45,55);
+               Track::ColorNoteWhite[color]:Renderer::ToColor(40,45,55);
           renderer.DrawPianoKey3D(start_x,y_offset,black_width,black_height,
                                   true,depression,cue,accent,m_keyboard_center);
           if(active){
@@ -597,7 +599,8 @@ void KeyboardDisplay::DrawBlackKeys(Renderer &renderer, const Tga *tex, bool act
             if(hit!=m_impact_started.end()){
               const ImpactVisual impact={start_x+black_width/2,y_offset,
                  black_width,(m_effect_frame_ticks-hit->second)/1000.0f,
-                 accent,NoteParticleSeed(note_name)};
+                 Effect3DPalette::Color(Track::ColorNoteWhite[color],
+                     m_visual.effectPalette,int(color)),NoteParticleSeed(note_name)};
               m_impact_visuals.push_back(impact);
               m_current_impacts[note_name]=impact;
             }
@@ -986,12 +989,9 @@ void KeyboardDisplay::DrawNotePass(Renderer &renderer, const Tga *tex_white, con
       if(m_render_3d){
         // Material continuo: el halo acompaña SOLO al contorno de la
         // cápsula. Las teclas negras y las 16 pistas conservan su color.
-        // Restore the actual selected fluorescent 3D palette. TrackTint
-        // returned the original opaque-looking MIDI hue irrespective of
-        // user palette; Color uses the real selected neon RGB family.
-        const SDL_Color base=Effect3DPalette::Color(
-          Track::ColorNoteWhite[brush_id],m_visual.effectPalette,
-          static_cast<int>(color));
+        // Color de la nota 3D invariable ante los ajustes de los efectos.
+        // El canal MIDI sigue controlando el vidrio neon y su transparencia.
+        const SDL_Color base=Track::ColorNoteWhite[brush_id];
         // In a full Blender scene, protect the performer from saturated,
         // opaque flame columns. Keep the keyboard-contact effect separate.
         const int brightness=std::max(20,std::min(

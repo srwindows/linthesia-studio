@@ -38,6 +38,43 @@ bool fontExists(const std::string& p){
  return p.substr(p.size()-4)==".sf2" || p.substr(p.size()-4)==".sf3";
 }
 std::string onoff(bool b){return b?"Activado":"Desactivado";}
+// Compact native sliders for the Studio particle engine: no long popup lists.
+// Shared by hit testing, drawing and preview, so all controls use one range.
+bool StudioEffectValue(const AdvancedSettings& a,int id,int& value,int& minimum,int& maximum){
+  switch(id){
+    case 180:value=a.effectWind;minimum=0;maximum=250;return true;
+    case 181:value=a.effectLife;minimum=25;maximum=250;return true;
+    case 182:value=a.effectTurbulence;minimum=0;maximum=200;return true;
+    case 183:value=a.effectInitialVelocity;minimum=0;maximum=250;return true;
+    case 184:value=a.effectBloom;minimum=0;maximum=200;return true;
+    case 185:value=a.effectOpacity;minimum=0;maximum=100;return true;
+    case 186:value=a.effectBlend;minimum=0;maximum=1;return true;
+    case 187:value=a.effectRays;minimum=0;maximum=1;return true;
+    case 188:value=a.effectSmoke;minimum=0;maximum=1;return true;
+    case 189:value=a.effectTrails;minimum=0;maximum=1;return true;
+    case 190:value=a.effectExplosion;minimum=0;maximum=250;return true;
+    case 191:value=a.effectFlameHeight;minimum=20;maximum=130;return true;
+    default:return false;
+  }
+}
+void SetStudioEffectValue(AdvancedSettings& a,int id,int v){
+  switch(id){
+    case 180:a.effectWind=std::max(0,std::min(250,v));break;
+    case 181:a.effectLife=std::max(25,std::min(250,v));break;
+    case 182:a.effectTurbulence=std::max(0,std::min(200,v));break;
+    case 183:a.effectInitialVelocity=std::max(0,std::min(250,v));break;
+    case 184:a.effectBloom=std::max(0,std::min(200,v));break;
+    case 185:a.effectOpacity=std::max(0,std::min(100,v));break;
+    case 186:a.effectBlend=std::max(0,std::min(1,v));break;
+    case 187:a.effectRays=std::max(0,std::min(1,v));break;
+    case 188:a.effectSmoke=std::max(0,std::min(1,v));break;
+    case 189:a.effectTrails=std::max(0,std::min(1,v));break;
+    case 190:a.effectExplosion=std::max(0,std::min(250,v));break;
+    case 191:a.effectFlameHeight=std::max(20,std::min(130,v));break;
+    default:break;
+  }
+}
+
 int cycle(int i,int n,int dir){return n?((i+n+dir%n)%n):0;}
 void scanFonts(std::vector<std::string>& result,const std::string& dir){
  GDir* it=g_dir_open(dir.c_str(),0,nullptr);
@@ -290,11 +327,35 @@ std::vector<TitleState::SettingsRow> TitleState::SettingsRows()const{
       "Anchura del zigzag y separación lateral respecto a la tecla.");
   add(83,"Tamaño de las partículas",std::to_string(a.effectSize)+" %",
       "Escala del destello y de su pequeña estela luminosa.");
-  add(84,"Paleta de colores",Effect3DPalette::Name(a.effectPalette),
+  add(84,"Color de efectos (no notas)",Effect3DPalette::Name(a.effectPalette),
       "Presets cromáticos originales; Original conserva el color de pista.");
   add(85,"Nacimiento de las notas",a.effectBirth?
       "Explosión superior → fuego descendente":"Clásico (actual)",
       "Elige cómo nace cada nota; se conserva el impacto inferior.");
+  add(180,"Viento de partículas",std::to_string(a.effectWind)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(181,"Vida útil de las partículas",std::to_string(a.effectLife)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(182,"Turbulencia del plasma",std::to_string(a.effectTurbulence)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(183,"Velocidad inicial",std::to_string(a.effectInitialVelocity)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(184,"Bloom de partículas",std::to_string(a.effectBloom)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(185,"Opacidad de partículas",std::to_string(a.effectOpacity)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(186,"Mezcla de partículas (0 alfa / 1 aditiva)",std::to_string(a.effectBlend)+"",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(187,"Rayos de partículas",std::to_string(a.effectRays)+"",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(188,"Humo de partículas",std::to_string(a.effectSmoke)+"",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(189,"Estelas finas",std::to_string(a.effectTrails)+"",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(190,"Explosión al contacto",std::to_string(a.effectExplosion)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
+  add(191,"Altura de la llama",std::to_string(a.effectFlameHeight)+" %",
+      "Control directo sobre las partículas 3D, sin modificar notas MIDI.");
   break;
  case 8:
   add(90,"Escenario 3D",StageScenes::Name(a.scenePreset),
@@ -893,7 +954,20 @@ void TitleState::ResetSettingsSection(){
         a.scenePianistMotion=def.scenePianistMotion;break;
  case 7:a.effectSpeed=def.effectSpeed;a.effectCount=def.effectCount;
         a.effectSpread=def.effectSpread;a.effectSize=def.effectSize;
-        a.effectPalette=def.effectPalette;a.effectBirth=def.effectBirth;break;
+        a.effectPalette=def.effectPalette;a.effectBirth=def.effectBirth;
+        a.effectWind=def.effectWind;
+        a.effectLife=def.effectLife;
+        a.effectTurbulence=def.effectTurbulence;
+        a.effectInitialVelocity=def.effectInitialVelocity;
+        a.effectBloom=def.effectBloom;
+        a.effectOpacity=def.effectOpacity;
+        a.effectBlend=def.effectBlend;
+        a.effectRays=def.effectRays;
+        a.effectSmoke=def.effectSmoke;
+        a.effectTrails=def.effectTrails;
+        a.effectExplosion=def.effectExplosion;
+        a.effectFlameHeight=def.effectFlameHeight;
+        break;
  }
  m_settings_dirty=true;
  m_settings_status="Valores restaurados en esta sección. Pulsa Aplicar.";
@@ -1084,6 +1158,20 @@ void TitleState::UpdateAdvancedSettings(const MouseInfo& mouse){
   const int ry=rowY+local*rowH;
   if(!inside(contentX+3,ry,contentW-5,rowH-3))continue;
   if(row.readOnly)return;
+  // Release-position slider: drag to the desired point and release, rather
+  // than opening a long combobox. The value previews until Guardar.
+  int current=0,minimum=0,maximum=0;
+  if(StudioEffectValue(m_draft_settings,row.id,current,minimum,maximum)){
+    const int sx=contentX+contentW-260,sw=225;
+    if(mouse.x>=sx-8 && mouse.x<=sx+sw+8){
+      const double portion=std::max(0.0,std::min(1.0,double(mouse.x-sx)/sw));
+      const int v=minimum+int(portion*(maximum-minimum)+.5);
+      SetStudioEffectValue(m_draft_settings,row.id,v);
+      m_settings_dirty=true;
+      m_settings_status="Efecto 3D actualizado; pulsa Aplicar o Guardar.";
+    }
+    return;
+  }
   m_reset_pending=false;
   if(row.id==30 || row.id==40){
    const int right=contentX+contentW;
@@ -1207,6 +1295,19 @@ void TitleState::DrawAdvancedSettings(Renderer& renderer)const{
   val << Text(value+(m_editing_path==row.id?"_":""),
                Renderer::ToColor(row.readOnly?168:244,row.readOnly?191:251,
                                  row.readOnly?181:241));
+  int effectValue=0,effectMinimum=0,effectMaximum=0;
+  if(StudioEffectValue(m_draft_settings,row.id,effectValue,effectMinimum,effectMaximum)){
+    const int sx=contentX+contentW-260,sy=ry+27,sw=225;
+    const double portion=double(effectValue-effectMinimum)/
+                         std::max(1,effectMaximum-effectMinimum);
+    renderer.SetColor(19,45,57);
+    renderer.DrawQuad(sx,sy,sw,7);
+    renderer.SetColor(44,178,192);
+    renderer.DrawQuad(sx,sy,std::max(0,int(sw*portion)),7);
+    renderer.SetColor(181,247,250);
+    renderer.DrawQuad(sx+std::max(0,int(sw*portion))-5,sy-6,11,19);
+    continue; // don't draw a huge menu over a compact slider
+  }
   if(row.id==84){
     for(int swatch=0;swatch<8;++swatch){
       renderer.SetColor(Effect3DPalette::Color(

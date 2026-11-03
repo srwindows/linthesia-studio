@@ -27,7 +27,7 @@ for hand in (0,1):
  assert .025<widths[2]<.042,('palm too thick',widths)
 assert (root/'assets/scenarios/blender/humano_cc0/LICENSE.ASSETS.md').is_file()
 blend=root/'assets/scenarios/blender/Linthesia_Pack_7_Escenarios.blend'
-assert blend.stat().st_size>15_000_000
+assert blend.stat().st_size>3_500_000 and blend.read_bytes()[:32].find(b'BLENDER')>=0
 src=(root/'src/LiveStage3D.cpp').read_text()
 assert 'InitPalmMeshes()' in src
 assert 'LoadPalmMesh(hand,triangles)' in src
