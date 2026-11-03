@@ -315,7 +315,7 @@ std::vector<TitleState::SettingsRow> TitleState::SettingsRows()const{
       std::to_string(m_output_choices.size())+" salidas","Dispositivos detectados.",true);
   add(63,"Archivo de configuración",AdvancedSettingsIO::Filename(),
       "Ajustes persistentes en el usuario.",true);
-  add(64,"Versión de Linthesia",LinthesiaVersionString,"Información real.",true);
+  add(64,"Versión de Linthesia - Studio",LinthesiaVersionString,"Información real.",true);
   break;
  }
  return r;
@@ -553,7 +553,7 @@ void TitleState::BrowseSettingsPath(int id){
  m_file_dialog_output.clear();
  const int flags=fcntl(outputFd,F_GETFL,0);
  if(flags>=0)fcntl(outputFd,F_SETFL,flags|O_NONBLOCK);
- m_settings_status="Explorador abierto. Linthesia sigue operativa.";
+ m_settings_status="Explorador abierto. Linthesia - Studio sigue operativa.";
 }
 void TitleState::SelectSettingsChoice(int id,int index){
  const auto choices=SettingsOptionsFor(id);
@@ -1149,7 +1149,7 @@ void TitleState::DrawAdvancedSettings(Renderer& renderer)const{
  renderer.DrawQuad(x+8,y+90,side,height-105);
  renderer.SetColor(255,255,255);
  TextWriter heading(x+25,y+18,renderer,false,28);
- heading << Text("Configuración de Linthesia",Renderer::ToColor(238,244,241));
+ heading << Text("Configuración de Linthesia - Studio",Renderer::ToColor(238,244,241));
  TextWriter tagline(x+26,y+54,renderer,false,14);
  tagline << Text("Pantalla · MIDI · Efectos 3D · Escenarios editables",
                  Renderer::ToColor(162,199,193));

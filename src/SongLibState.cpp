@@ -472,7 +472,7 @@ void SongLibState::PollMidiImport(){
     job->done.store(true,std::memory_order_release);
  }).detach();
  m_error.clear();
- m_notice="Importando archivos MIDI en 1... Puedes seguir utilizando Linthesia.";
+ m_notice="Importando archivos MIDI en 1... Puedes seguir utilizando Linthesia - Studio.";
 }
 void SongLibState::UpdateSongTilesPage() {
     m_compact_subfolders=(m_current_path!=m_base_path);

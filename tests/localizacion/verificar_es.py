@@ -38,8 +38,8 @@ assert 'Acoustic Grand Piano' not in instruments
 print('ES_MIDI_INSTRUMENTS_OK',len(names))
 
 required={
- 'src/TitleState.cpp':['Tamaño del teclado:', 'Salir de Linthesia.',
-                       'Tamaño del teclado:', 'Salir de Linthesia.'],
+ 'src/TitleState.cpp':['Tamaño del teclado:', 'Salir de Linthesia - Studio.',
+                       'Tamaño del teclado:', 'Salir de Linthesia - Studio.'],
  'src/DeviceTile.cpp':['Sin entrada: acompañamiento sin puntuación'],
  'src/TrackSelectionState.cpp':['Seleccionar las pistas para tocar',
                                 'Página ', 'Escuchar una muestra'],
@@ -56,6 +56,15 @@ for name,strings in required.items():
  for item in strings:
   assert item in text,(name,'missing Spanish text',item)
 print('ES_GUI_CODE_OK',len(required),'sources')
+# The user-facing fork brand is distinct from internal filenames and IDs.
+assert 'Linthesia - Studio ' in (root/'src/main.cpp').read_text()
+assert 'Configuración de Linthesia - Studio' in (root/'src/SettingsPanel.cpp').read_text()
+assert 'Linthesia - Studio · versión ' in (root/'src/TitleState.cpp').read_text()
+assert 'Name=Linthesia - Studio' in (root/'extra/linthesia.desktop').read_text()
+assert '<name>Linthesia - Studio</name>' in (root/'extra/linthesia.metainfo.xml').read_text()
+assert '<id>linthesia</id>' in (root/'extra/linthesia.metainfo.xml').read_text()
+assert 'Exec=linthesia' in (root/'extra/linthesia.desktop').read_text()
+print('ES_STUDIO_BRANDING_OK: UI renamed, binary/config identity preserved')
 
 with tempfile.TemporaryDirectory() as tmp:
  mo=Path(tmp)/'es.mo'

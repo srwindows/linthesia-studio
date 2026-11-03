@@ -1,4 +1,6 @@
-# Linthesia 0.8.0 — fork mejorado (versión de desarrollo)
+# Linthesia - Studio — 0.8.0 (versión beta para Debian)
+
+**Repositorio del fork:** https://github.com/srwindows/linthesia-studio
 
 **Origen del proyecto:** [linthesia/linthesia](https://github.com/linthesia/linthesia).
 Linthesia es software libre derivado de trabajo previo; **no se presenta como una aplicación creada desde cero**. Se conservan los derechos y créditos de los autores originales, incluido Nicholas Piegdon y la adaptación de Oscar Aceña, y la licencia incluida en [`COPYING`](COPYING) (GNU GPL v2, conforme a los avisos del código original). Los cambios añadidos deben mantener los avisos y licencias correspondientes. No se incorpora código propietario actual de Synthesia ni SeeMusic.

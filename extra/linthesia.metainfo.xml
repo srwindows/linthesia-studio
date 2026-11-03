@@ -3,16 +3,16 @@
   <id>linthesia</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-2.0-or-later</project_license>
-  <name>Linthesia</name>
-  <summary>A game of playing music!</summary>
+  <name>Linthesia - Studio</name>
+  <summary>Piano practice, MIDI playback and 3D music visualization</summary>
 
   <description>
     <p>
-    Linthesia is a game. A game of playing music! You only need a MIDI file to play, and a MIDI keyboard (or your PC keyboard).
+    Linthesia - Studio extends the original Linthesia music-practice game. You only need a MIDI file to play, and a MIDI keyboard (or your PC keyboard).
     </p>
 
     <p>
-    It's a fork of Synthesia, which only runs on Windows and OS X. Linthesia is for GNU/Linux.
+    This GNU/Linux version extends the original GPL-licensed Linthesia codebase.
     </p>
   </description>
 
@@ -51,8 +51,8 @@
   </provides>
 
   <launchable type="desktop-id">linthesia.desktop</launchable>
-  <url type="homepage">http://linthesia.sourceforge.net</url>
-  <url type="bugtracker">https://gihub/linthesia/linthesia/issues</url>
+  <url type="homepage">https://github.com/srwindows/linthesia-studio</url>
+  <url type="bugtracker">https://github.com/srwindows/linthesia-studio/issues</url>
 
   <content_rating type="oars-1.1">
     <content_attribute id="violence-cartoon">none</content_attribute>

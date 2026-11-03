@@ -1,11 +1,11 @@
-# linthesia
+# Linthesia - Studio
 
-**Maintained derivative work / beta:** this repository builds on the upstream [Linthesia](https://github.com/linthesia/linthesia) GPL-licensed project, retaining its history, original authors and licensing. It adds modern MIDI/FluidSynth, practice, 3D and video-export functionality. [Documentación en español y limitaciones conocidas](README_ES.md). The software is under active development and is not a product of the current proprietary Synthesia or SeeMusic projects.
+**Linthesia - Studio — beta for Debian.** Maintained derivative work: this repository builds on the upstream [Linthesia](https://github.com/linthesia/linthesia) GPL-licensed project, retaining its history, original authors and licensing. It adds modern MIDI/FluidSynth, practice, 3D and video-export functionality. [Documentación en español y limitaciones conocidas](README_ES.md). The software is under active development and is not a product of the current proprietary Synthesia or SeeMusic projects.
 
-![Build Status](https://github.com/linthesia/linthesia/actions/workflows/c-cpp.yml/badge.svg)
+**GitHub:** https://github.com/srwindows/linthesia-studio
 
 
-Linthesia is a fork of the Windows/Mac game called Synthesia. It is a game of playing music using a MIDI keyboard (or your PC keyboard), following a .mid file.
+Linthesia - Studio builds on the original open-source Linthesia project, itself a fork of the earlier Synthesia software. It is a game of playing music using a MIDI keyboard (or your PC keyboard), following a .mid file.
 
 Synthesia up to version 0.6.1a is Open Source. This project uses the latest source from sourceforge.
 

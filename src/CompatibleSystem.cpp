@@ -40,7 +40,7 @@ namespace Compatible {
   void ShowError(const string &err) {
 
     const static string friendly_app_name =
-      STRING("Linthesia " << LinthesiaVersionString);
+      STRING("Linthesia - Studio " << LinthesiaVersionString);
     const static string message_box_title =
       STRING(friendly_app_name << " — Error");
 

@@ -55,13 +55,13 @@ bool main_loop_running = true;
 char *sqlite_db_str;
 sqlite3 *db;
 
-const static string friendly_app_name = STRING("Linthesia " <<
+const static string friendly_app_name = STRING("Linthesia - Studio " <<
                                                LinthesiaVersionString);
 
 // These constants initialize before main/setlocale: avoid untranslated gettext.
-const static string error_header1 = "Linthesia ha detectado un";
+const static string error_header1 = "Linthesia - Studio ha detectado un";
 const static string error_header2 = " problema y debe cerrarse:\n\n";
-const static string error_footer = "\n\nSi crees que no debería haber ocurrido, puedes notificar el error en:\nhttps://github.com/linthesia/linthesia\n\nGracias.";
+const static string error_footer = "\n\nSi crees que no debería haber ocurrido, puedes notificar el error en:\nhttps://github.com/srwindows/linthesia-studio\n\nGracias.";
 
 const static int vsync_interval = 1;
 
@@ -804,14 +804,14 @@ int main(int argc, char *argv[]) {
     Compatible::ShowError(wrapped_description);
   }
   catch (const exception &e) {
-    string wrapped_description = STRING(_("Linthesia detected an unknown "
+    string wrapped_description = STRING(_("Linthesia - Studio detected an unknown "
                                         "problem and must close!  '") <<
                                         e.what() << "'" << error_footer);
     Compatible::ShowError(wrapped_description);
   }
 
   catch (...) {
-    string wrapped_description = STRING(_("Linthesia detected an unknown "
+    string wrapped_description = STRING(_("Linthesia - Studio detected an unknown "
                                         "problem and must close!") <<
                                         error_footer);
     Compatible::ShowError(wrapped_description);

@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Linthesia
-GenericName=Piano game
-Comment=Piano hero like game
+Name=Linthesia - Studio
+GenericName=Práctica musical con MIDI
+Comment=Practica piano y MIDI con visualizaciones 3D
 Icon=linthesia
 Exec=linthesia
 Categories=Game;Music;Education;

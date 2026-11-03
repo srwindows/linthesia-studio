@@ -316,7 +316,7 @@ void TitleState::Update() {
    m_tooltip = "";
 
    if (m_back_button.hovering)
-     m_tooltip = "Salir de Linthesia.";
+     m_tooltip = "Salir de Linthesia - Studio.";
 
    if (m_continue_button.hovering)
      m_tooltip = "Ir a la selección de pistas.";
@@ -365,7 +365,7 @@ void TitleState::Draw(Renderer &renderer) const {
                      GetStateHeight() - Layout::ScreenMarginY - Layout::SmallFontSize * 2,
                      renderer, false, Layout::SmallFontSize);
 
-  version << Text("versión " + LinthesiaVersionString, Gray);
+  version << Text("Linthesia - Studio · versión " + LinthesiaVersionString, Gray);
 
   Layout::DrawHorizontalRule(renderer,
                              GetStateWidth(),
